@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Emagrecimento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1>Dashboard de Emagrecimento</h1>
+            <p class="subtitle">Carregue os dois arquivos e clique em Calcular</p>
+        </header>
+
+        <section class="upload-section" id="uploadSection">
+            <div class="dropzones-row">
+                <label class="dropzone-single" id="dropzoneZip" data-type="zip">
+                    <span class="dropzone-label">ZIP MyFitnessPal</span>
+                    <span class="dropzone-filename" id="zipFilename">Arraste ou clique</span>
+                    <input type="file" id="fileInputZip" accept=".zip" hidden>
+                </label>
+                <label class="dropzone-single" id="dropzonePdf" data-type="pdf">
+                    <span class="dropzone-label">PDF Withings</span>
+                    <span class="dropzone-filename" id="pdfFilename">Arraste ou clique</span>
+                    <input type="file" id="fileInputPdf" accept=".pdf" hidden>
+                </label>
+            </div>
+            <div class="upload-options">
+                <div class="upload-form-grid">
+                    <div class="form-group">
+                        <label for="targetDate">Data alvo</label>
+                        <input type="date" id="targetDate" name="target_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userName">Nome</label>
+                        <input type="text" id="userName" name="name" placeholder="Seu nome">
+                    </div>
+                    <div class="form-group">
+                        <label for="userSex">Sexo</label>
+                        <select id="userSex" name="sex">
+                            <option value="">Selecione</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Feminino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="userHeight">Altura (cm)</label>
+                        <input type="number" id="userHeight" name="height_cm" placeholder="170" min="100" max="250" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="userAge">Idade</label>
+                        <input type="number" id="userAge" name="age" placeholder="30" min="10" max="120" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="userWeight" title="Opcional. Se vazio, usa o peso mais recente dos dados.">Peso (kg)</label>
+                        <input type="number" id="userWeight" name="weight_kg" placeholder="Ex: 70" min="30" max="300" step="0.1">
+                    </div>
+                    <div class="form-group form-group--override">
+                        <label>Metas (opcional – sobrescreve o cálculo automático)</label>
+                        <div class="override-fields">
+                            <input type="number" id="calorieMin" name="calorie_min" placeholder="Cal min" min="800" max="4000" step="50">
+                            <input type="number" id="calorieMax" name="calorie_max" placeholder="Cal max" min="800" max="4000" step="50">
+                            <input type="number" id="proteinG" name="protein_g" placeholder="Proteína (g)" min="50" max="300" step="5">
+                            <input type="number" id="fiberG" name="fiber_g" placeholder="Fibra (g)" min="10" max="50" step="1">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-calculate" id="btnCalculate">Calcular</button>
+            </div>
+        </section>
+
+        <section class="dashboard hidden" id="dashboard">
+            <div class="dashboard-header">
+                <div class="dashboard-header-left">
+                    <div class="file-status" id="fileStatus"></div>
+                    <div class="user-info-summary" id="userInfoSummary"></div>
+                </div>
+                <div class="dashboard-actions">
+                    <button type="button" class="btn-export-json" id="exportJsonBtn">Exportar JSON</button>
+                    <button type="button" class="btn-new-upload" id="btnNewUpload">Novo upload</button>
+                </div>
+            </div>
+
+            <div class="summary-cards" id="summaryCards">
+                <div class="summary-card">
+                    <span class="summary-card-label">Gordura estimada</span>
+                    <span class="summary-card-value" id="summaryFat">--</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-card-label">Calorias média</span>
+                    <span class="summary-card-value" id="summaryCalories">--</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-card-label">Insights</span>
+                    <span class="summary-card-value" id="summaryInsights">--</span>
+                </div>
+                <div class="summary-card">
+                    <span class="summary-card-label">Alertas</span>
+                    <span class="summary-card-value" id="summaryAlerts">--</span>
+                </div>
+            </div>
+
+            <div class="cards-grid">
+                <div class="card weight-card">
+                    <h2>Peso</h2>
+                    <div class="weight-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="latestWeight">--</span>
+                            <span class="stat-label">kg (atual)</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="ma5">--</span>
+                            <span class="stat-label">MA5</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="ma7">--</span>
+                            <span class="stat-label">MA7</span>
+                        </div>
+                        <div class="stat trend" id="ma7Trend">
+                            <span class="stat-value">--</span>
+                            <span class="stat-label">Variação MA7</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="totalLoss">--</span>
+                            <span class="stat-label">Perda total</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="lossRate">--</span>
+                            <span class="stat-label">Taxa (kg/sem)</span>
+                        </div>
+                        <div class="stat" id="bodyFatStat" style="display: none;">
+                            <span class="stat-value" id="latestBodyFat">--</span>
+                            <span class="stat-label">Gordura corporal % (média)</span>
+                        </div>
+                        <div class="stat" id="fatMassTrendStat" style="display: none;">
+                            <span class="stat-value" id="fatMassTrend">--</span>
+                            <span class="stat-label">Tendência massa gorda (PDF)</span>
+                        </div>
+                        <div class="stat" id="leanMassTrendStat" style="display: none;">
+                            <span class="stat-value" id="leanMassTrend">--</span>
+                            <span class="stat-label">Tendência massa magra (PDF)</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card nutrition-card">
+                    <h2>Alimentação</h2>
+                    <div class="nutrition-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="avgCalories">--</span>
+                            <span class="stat-label">kcal/dia</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="avgProtein">--</span>
+                            <span class="stat-label">g proteína</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="avgFiber">--</span>
+                            <span class="stat-label">g fibra</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="avgSodium">--</span>
+                            <span class="stat-label">mg sódio</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="avgCarbs">--</span>
+                            <span class="stat-label">g carboidratos</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="avgFat">--</span>
+                            <span class="stat-label">g gordura</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="nutritionChart"></canvas>
+                    </div>
+                    <div class="nutrition-details">
+                        <p><span id="daysLogged">0</span> dias registrados</p>
+                        <p>Dias <span id="calRangeLabel">--</span> kcal: <strong id="daysTarget">0</strong></p>
+                        <p>Dias &lt;<span id="calLowLabel">--</span> kcal: <strong id="daysBelow">0</strong></p>
+                        <p>Dias &gt;<span id="calHighLabel">--</span> kcal: <strong id="daysAbove">0</strong></p>
+                        <p>Dias proteína ≥<span id="proteinTargetLabel">--</span>g: <strong id="daysProtein">0</strong></p>
+                        <p>Dias fibra ≥<span id="fiberTargetLabel">--</span>g: <strong id="daysFiber">0</strong></p>
+                        <div id="sugarSection" style="display: none;">
+                            <p>Açúcar médio: <strong id="avgSugar">--</strong> g</p>
+                            <p>Dias açúcar &gt;50g: <strong id="daysHighSugar">0</strong></p>
+                        </div>
+                        <div id="fatProfileSection" style="display: none;"></div>
+                        <div id="caloriesByMealSection" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <div class="card exercise-card">
+                    <h2>Exercícios</h2>
+                    <div class="exercise-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="exerciseDays">--</span>
+                            <span class="stat-label">dias registrados</span>
+                        </div>
+                        <div class="stat" id="avgMinutesStat">
+                            <span class="stat-value" id="avgMinutes">--</span>
+                            <span class="stat-label">min/dia</span>
+                        </div>
+                        <div class="stat" id="avgStepsStat">
+                            <span class="stat-value" id="avgSteps">--</span>
+                            <span class="stat-label">passos/dia</span>
+                        </div>
+                        <div class="stat" id="avgCaloriesStat">
+                            <span class="stat-value" id="avgExerciseCal">--</span>
+                            <span class="stat-label">kcal exercício</span>
+                        </div>
+                    </div>
+                    <div class="exercise-session-types" id="sessionTypeCounts"></div>
+                    <div class="chart-container">
+                        <canvas id="exerciseChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card comparison-card" id="comparisonCard">
+                    <h2>Comparação MFP vs Withings</h2>
+                    <div class="comparison-metrics" id="comparisonMetrics">
+                        <p class="empty-state">Carregue os arquivos para ver a comparação</p>
+                    </div>
+                </div>
+
+                <div class="card pdf-report-v2-card" id="pdfReportV2Card">
+                    <h2>Relatório Withings v2</h2>
+                    <div class="pdf-v2-blocks">
+                        <div class="pdf-v2-block">
+                            <h3>Atividade</h3>
+                            <div class="metrics-panel" id="pdfV2Activity">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                        </div>
+                        <div class="pdf-v2-block">
+                            <h3>Composição corporal</h3>
+                            <div class="metrics-panel" id="pdfV2Body">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                        </div>
+                        <div class="pdf-v2-block">
+                            <h3>Sono</h3>
+                            <div class="metrics-panel" id="pdfV2Sleep">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                        </div>
+                        <div class="pdf-v2-block">
+                            <h3>Cardio</h3>
+                            <div class="metrics-panel" id="pdfV2Cardio">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card weekly-card" id="weeklyCard">
+                    <h2>Resumo Semanal</h2>
+                    <div class="metrics-panel" id="weeklySummary">
+                        <p class="empty-state">Nenhum dado semanal</p>
+                    </div>
+                </div>
+
+                <div class="card alerts-card" id="alertsCard">
+                    <h2>Insights e Alertas</h2>
+                    <div class="alerts-panel" id="alertsList">
+                        <p class="empty-state">Nenhum alerta</p>
+                    </div>
+                </div>
+
+                <div class="card adherence-card" id="adherenceCard">
+                    <h2>Aderência Semanal</h2>
+                    <div class="metrics-panel" id="weeklyAdherence">
+                        <p class="empty-state">Nenhum dado de aderência</p>
+                    </div>
+                </div>
+
+                <div class="card projection-card" id="projectionCard">
+                    <h2>Projeção de Peso</h2>
+                    <div class="metrics-panel" id="projectionContent">
+                        <p class="empty-state">Dados insuficientes para projeção</p>
+                    </div>
+                </div>
+
+                <div class="card retention-card" id="retentionCard">
+                    <h2>Flag de Retenção</h2>
+                    <div class="metrics-panel" id="retentionFlagContent">
+                        <p class="empty-state">Dados insuficientes</p>
+                    </div>
+                </div>
+
+                <div class="card sleep-card" id="sleepCard">
+                    <h2>Sono</h2>
+                    <div class="metrics-panel" id="sleepContent">
+                        <p class="empty-state">Sem dados de sono</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="loading hidden" id="loading">
+            <div class="spinner"></div>
+            <p>Processando arquivos...</p>
+        </div>
+
+        <div class="error hidden" id="error">
+            <p id="errorMessage"></p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
