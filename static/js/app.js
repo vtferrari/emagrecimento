@@ -162,8 +162,9 @@
             showError('Nenhum relatório para exportar. Calcule primeiro.');
             return;
         }
-        const filename = lastReportData.suggested_export_filename || (() => {
-            const user = lastReportData.user || {};
+        const report = lastReportData.report || lastReportData;
+        const filename = report.suggested_export_filename || (() => {
+            const user = report.user || {};
             const rawName = (user.name || 'relatorio').trim();
             const namePart = (rawName ? rawName.replace(/\s+/g, '_').replace(/[/\\:*?"<>|]/g, '') : 'relatorio');
             const now = new Date();
@@ -304,7 +305,8 @@
             document.getElementById('fileStatus').textContent =
                 `Processado: ${zipFile.name} + ${pdfFile.name}`;
 
-            renderDashboard(data);
+            lastReportData = data;
+            renderDashboard(data.report);
             uploadSection.classList.add('hidden');
             dashboard.classList.remove('hidden');
         } catch (err) {
@@ -315,7 +317,7 @@
     }
 
     function renderDashboard(data) {
-        lastReportData = data;
+        // lastReportData is set in processFiles with full { agent, report } for export
 
         // User info summary (name, sex, height, age, target date)
         const user = data.user || {};

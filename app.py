@@ -18,6 +18,7 @@ from emagrecimento.container import (
     create_extract_pdf_use_case,
     create_extract_zip_use_case,
 )
+from emagrecimento.application.chatgpt_export import wrap_report_for_chatgpt
 from emagrecimento.domain.export_filename import build_export_filename
 
 app = Flask(__name__)
@@ -184,7 +185,8 @@ def process_files():
         summary["target_date"] = target_date
         summary["suggested_export_filename"] = build_export_filename(name)
 
-        return jsonify(summary)
+        output = wrap_report_for_chatgpt(summary)
+        return jsonify(output)
     except FileNotFoundError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:

@@ -52,6 +52,37 @@ def _create_minimal_pdf() -> bytes:
 class TestApiProcess:
     """Integration tests for POST /api/process."""
 
+    def test_api_response_has_agent_and_report_structure(self) -> None:
+        """API response includes agent.prompt, agent.context and report with full data."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "target_date": "2026-06-01",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+
+        assert "agent" in data
+        assert "prompt" in data["agent"]
+        assert "context" in data["agent"]
+        assert len(data["agent"]["prompt"]) > 0
+        assert len(data["agent"]["context"]) > 0
+
+        assert "report" in data
+        report = data["report"]
+        assert "weight" in report
+        assert "nutrition" in report
+        assert "exercise" in report
+        assert "comparison" in report
+
     def test_api_process_returns_new_structure(self) -> None:
         """API response includes weight.total_loss_kg, nutrition.nutrition_history, exercise.exercise_history, comparison."""
         client = app.test_client()
@@ -69,43 +100,44 @@ class TestApiProcess:
 
         assert response.status_code == 200
         data = response.get_json()
+        report = data["report"]
 
-        assert "weight" in data
-        assert "total_loss_kg" in data["weight"]
-        assert "loss_rate_kg_per_week" in data["weight"]
-        assert "first_weight_kg" in data["weight"]
-        assert "latest_weight_kg" in data["weight"]
+        assert "weight" in report
+        assert "total_loss_kg" in report["weight"]
+        assert "loss_rate_kg_per_week" in report["weight"]
+        assert "first_weight_kg" in report["weight"]
+        assert "latest_weight_kg" in report["weight"]
 
-        assert "nutrition" in data
-        assert "nutrition_history" in data["nutrition"]
-        assert isinstance(data["nutrition"]["nutrition_history"], list)
-        assert "avg_carbs_g" in data["nutrition"]
-        assert "avg_fat_g" in data["nutrition"]
+        assert "nutrition" in report
+        assert "nutrition_history" in report["nutrition"]
+        assert isinstance(report["nutrition"]["nutrition_history"], list)
+        assert "avg_carbs_g" in report["nutrition"]
+        assert "avg_fat_g" in report["nutrition"]
 
-        assert "exercise" in data
-        assert "exercise_history" in data["exercise"]
-        assert isinstance(data["exercise"]["exercise_history"], list)
-        assert "session_type_counts" in data["exercise"]
+        assert "exercise" in report
+        assert "exercise_history" in report["exercise"]
+        assert isinstance(report["exercise"]["exercise_history"], list)
+        assert "session_type_counts" in report["exercise"]
 
-        assert "comparison" in data
-        assert "weight_mfp_kg" in data["comparison"]
-        assert "weight_withings_kg" in data["comparison"]
-        assert "steps_mfp" in data["comparison"]
-        assert "steps_withings" in data["comparison"]
+        assert "comparison" in report
+        assert "weight_mfp_kg" in report["comparison"]
+        assert "weight_withings_kg" in report["comparison"]
+        assert "steps_mfp" in report["comparison"]
+        assert "steps_withings" in report["comparison"]
 
-        assert "target_date" in data
-        assert data["target_date"] == "2026-06-01"
-        assert "user" in data
+        assert "target_date" in report
+        assert report["target_date"] == "2026-06-01"
+        assert "user" in report
         # When form does not send user info, weight is extracted from measures (last row = 83.3)
-        assert data["user"]["name"] is None
-        assert data["user"]["sex"] is None
-        assert data["user"]["height_cm"] is None
-        assert data["user"]["age"] is None
-        assert data["user"]["weight_kg"] == 83.3  # extracted from measures
+        assert report["user"]["name"] is None
+        assert report["user"]["sex"] is None
+        assert report["user"]["height_cm"] is None
+        assert report["user"]["age"] is None
+        assert report["user"]["weight_kg"] == 83.3  # extracted from measures
 
-        assert "suggested_export_filename" in data
-        assert data["suggested_export_filename"].endswith(".json")
-        assert "relatorio_" in data["suggested_export_filename"]  # no name -> relatorio
+        assert "suggested_export_filename" in report
+        assert report["suggested_export_filename"].endswith(".json")
+        assert "relatorio_" in report["suggested_export_filename"]  # no name -> relatorio
 
     def test_suggested_export_filename_includes_user_name(self) -> None:
         """suggested_export_filename includes user name when provided."""
@@ -124,7 +156,7 @@ class TestApiProcess:
         )
         assert response.status_code == 200
         data = response.get_json()
-        fn = data["suggested_export_filename"]
+        fn = data["report"]["suggested_export_filename"]
         assert fn.startswith("Vinicius_")
         assert fn.endswith(".json")
         # Format: Vinicius_YYYY-MM-DD_HH-mm-ss.json
@@ -169,7 +201,8 @@ class TestApiProcess:
 
         assert response.status_code == 200
         data = response.get_json()
-        targets = data.get("meta", {}).get("adherence_targets") or data.get("nutrition", {}).get("adherence_targets")
+        report = data["report"]
+        targets = report.get("meta", {}).get("adherence_targets") or report.get("nutrition", {}).get("adherence_targets")
         assert targets is not None
         assert targets.get("fat_g") == 65
         assert targets.get("carbs_g") == 150
