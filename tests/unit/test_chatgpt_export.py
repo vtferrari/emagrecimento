@@ -2,7 +2,7 @@
 
 import pytest
 
-from emagrecimento.application.chatgpt_export import (
+from emagrecimento.application.presenters.chatgpt_export import (
     CHATGPT_PROMPT,
     build_agent_context,
     wrap_report_for_chatgpt,

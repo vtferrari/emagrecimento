@@ -24,11 +24,11 @@ _project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "src"))
 
-from app import _extract_user_info_from_files
-from emagrecimento.application.chatgpt_export import wrap_report_for_chatgpt
+from emagrecimento.application.presenters.chatgpt_export import wrap_report_for_chatgpt
 from emagrecimento.container import (
     create_build_report_use_case,
     create_extract_pdf_use_case,
+    create_extract_user_info_use_case,
     create_extract_zip_use_case,
 )
 
@@ -80,7 +80,8 @@ Exemplos:
 
     zip_data = extract_zip.execute(args.zip_file)
     pdf_metrics = extract_pdf.execute(args.pdf_file)
-    extracted = _extract_user_info_from_files(zip_data, pdf_metrics)
+    extract_user_info = create_extract_user_info_use_case()
+    extracted = extract_user_info.execute(zip_data, pdf_metrics)
     user_info = dict(extracted)
     if args.name:
         user_info["name"] = args.name

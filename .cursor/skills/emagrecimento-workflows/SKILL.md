@@ -17,7 +17,7 @@ Always write the test before implementing. Red → Green → Refactor.
    - For alternate formats, add to `FALLBACK_PATTERNS`.
    - If value is numeric, ensure key is in the parse block (ends with `_kg`, `_pct`, `_bpm`, `_sec`, `_min`, or in `("visceral_fat", "nights", "pwv_m_per_s")`).
 
-3. **Transformer** (`build_report.py`, `_build_pdf_report_v2`):
+3. **Transformer** (`src/emagrecimento/application/transformers/pdf_report_v2.py`, `build_pdf_report_v2`):
    - Map flat key to block: `activity`, `body`, `sleep`, or `cardio`.
    - For derived values (e.g. `derived_fat_mass_pct`), compute from other metrics.
 
@@ -37,7 +37,7 @@ Always write the test before implementing. Red → Green → Refactor.
 ```
 src/emagrecimento/
 ├── domain/          # entities, value_objects
-├── application/     # interfaces, use_cases (build_report, extract_pdf, extract_zip)
+├── application/     # interfaces, use_cases, services, transformers, presenters
 ├── infrastructure/  # zip_reader, pdf_reader, pdf_metrics_parser
 └── container.py     # composition root
 ```

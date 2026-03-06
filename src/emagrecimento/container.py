@@ -2,6 +2,7 @@
 
 from emagrecimento.application.use_cases.build_report import BuildReportUseCase
 from emagrecimento.application.use_cases.extract_pdf import ExtractPdfMetricsUseCase
+from emagrecimento.application.use_cases.extract_user_info import ExtractUserInfoFromFiles
 from emagrecimento.application.use_cases.extract_zip import ExtractZipDataUseCase
 from emagrecimento.infrastructure.pdf_metrics_parser import WithingsPdfMetricsParser
 from emagrecimento.infrastructure.pdf_reader import PypdfPdfReader
@@ -24,3 +25,8 @@ def create_extract_pdf_use_case() -> ExtractPdfMetricsUseCase:
 def create_build_report_use_case() -> BuildReportUseCase:
     """Factory for BuildReportUseCase."""
     return BuildReportUseCase()
+
+
+def create_extract_user_info_use_case() -> ExtractUserInfoFromFiles:
+    """Factory for ExtractUserInfoFromFiles."""
+    return ExtractUserInfoFromFiles()

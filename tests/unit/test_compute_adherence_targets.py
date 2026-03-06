@@ -2,7 +2,7 @@
 
 import pytest
 
-from emagrecimento.application.use_cases.build_report import (
+from emagrecimento.application.services.adherence_targets import (
     ADHERENCE_TARGETS,
     compute_adherence_targets,
 )

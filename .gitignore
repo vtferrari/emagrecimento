@@ -39,3 +39,4 @@ htmlcov/
 # Project specific
 cutting_report.json
 *.zip
+data/

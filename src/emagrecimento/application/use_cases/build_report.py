@@ -3,95 +3,21 @@
 from __future__ import annotations
 
 from datetime import datetime
-
 from typing import Any
 
 import pandas as pd
 
+from emagrecimento.application.services.adherence_targets import (
+    ADHERENCE_TARGETS,
+    MIN_MA7_ROWS_FOR_TREND,
+    PROJECTION_FALLBACK_RATES_KG_PER_WEEK,
+    compute_adherence_targets,
+)
+from emagrecimento.application.transformers.pdf_report_v2 import build_pdf_report_v2
 from emagrecimento.domain.entities import ZipData
 
 # Default target date for projection (configurable later)
 DEFAULT_PROJECTION_TARGET = "2026-03-27"
-
-# Fallback scenario rates when insufficient MA7 data (need 15+ days for trend)
-PROJECTION_FALLBACK_RATES_KG_PER_WEEK = {
-    "pessimistic": -0.14,
-    "realistic": -0.25,
-    "optimistic": -0.35,
-}
-MIN_MA7_ROWS_FOR_TREND = 15
-
-# Default adherence targets (used when user_info insufficient for personalized calc)
-ADHERENCE_TARGETS = {
-    "calorie_range": [1800, 1950],
-    "protein_g": 170,
-    "fat_g": None,
-    "carbs_g": None,
-    "fiber_g": 25,
-    "sodium_mg_max": 2500,
-    "sessions_per_week": 4,
-}
-
-
-def compute_adherence_targets(
-    weight_kg: float,
-    height_cm: int | None = None,
-    sex: str | None = None,
-    age: int | None = None,
-    *,
-    override: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """
-    Compute personalized adherence targets from weight, height, sex, age.
-    Uses Mifflin-St Jeor for BMR, 1.8 g/kg protein (cutting), 14g fiber/1000 kcal.
-    override: optional dict with calorie_min, calorie_max, protein_g, fat_g, carbs_g, fiber_g to override.
-    """
-    targets: dict[str, Any] = dict(ADHERENCE_TARGETS)
-    if override:
-        if "calorie_min" in override and override["calorie_min"] is not None:
-            targets["calorie_range"] = [
-                int(override["calorie_min"]),
-                targets["calorie_range"][1],
-            ]
-        if "calorie_max" in override and override["calorie_max"] is not None:
-            targets["calorie_range"] = [
-                targets["calorie_range"][0],
-                int(override["calorie_max"]),
-            ]
-        if "protein_g" in override and override["protein_g"] is not None:
-            targets["protein_g"] = int(override["protein_g"])
-        if "fat_g" in override and override["fat_g"] is not None:
-            targets["fat_g"] = int(override["fat_g"])
-        if "carbs_g" in override and override["carbs_g"] is not None:
-            targets["carbs_g"] = int(override["carbs_g"])
-        if "fiber_g" in override and override["fiber_g"] is not None:
-            targets["fiber_g"] = int(override["fiber_g"])
-        return targets
-
-    # Protein: 1.8 g/kg body weight (scientific consensus for cutting - preserve lean mass)
-    protein_g = max(80, min(200, round(weight_kg * 1.8, 0)))
-    targets["protein_g"] = int(protein_g)
-
-    # Calories: Mifflin-St Jeor BMR, then TDEE * 0.85 for ~15% deficit
-    if height_cm is not None and sex and age is not None:
-        if sex.upper() == "M":
-            bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
-        else:
-            bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
-        tdee = bmr * 1.375  # light activity
-        cutting_cal = round(tdee * 0.85)
-        margin = max(75, int(cutting_cal * 0.05))
-        targets["calorie_range"] = [
-            max(1200, cutting_cal - margin),
-            min(3000, cutting_cal + margin),
-        ]
-
-    # Fiber: 14g per 1000 kcal (ADA) or min 20g
-    cal_mid = (targets["calorie_range"][0] + targets["calorie_range"][1]) / 2
-    fiber_g = max(20, round(14 * cal_mid / 1000, 0))
-    targets["fiber_g"] = int(fiber_g)
-
-    return targets
 
 
 class BuildReportUseCase:
@@ -244,7 +170,7 @@ class BuildReportUseCase:
         if not exercise.empty and "steps" in exercise.columns and not exercise["steps"].dropna().empty:
             steps_mfp = int(round(float(exercise["steps"].mean()), 0))
 
-        pdf_report_v2 = self._build_pdf_report_v2(pdf_metrics)
+        pdf_report_v2 = build_pdf_report_v2(pdf_metrics)
         weight_withings = (
             pdf_report_v2.get("body", {}).get("latest_weight_kg")
             or pdf_metrics.get("latest_weight_kg")
@@ -329,95 +255,6 @@ class BuildReportUseCase:
             "alerts": alerts,
             "sleep": sleep_block,
         }
-
-    @staticmethod
-    def _build_pdf_report_v2(flat: dict[str, Any]) -> dict[str, Any]:
-        """Transform flat PDF metrics into structured v2 with activity, body, sleep, cardio blocks."""
-        activity: dict[str, Any] = {}
-        body: dict[str, Any] = {}
-        sleep: dict[str, Any] = {}
-        cardio: dict[str, Any] = {}
-
-        # Activity: map from flat keys
-        if flat.get("daily_steps_avg") is not None:
-            activity["avg_daily_steps"] = int(flat["daily_steps_avg"])
-        if flat.get("daily_active_minutes_avg") is not None:
-            activity["avg_active_minutes"] = int(flat["daily_active_minutes_avg"])
-        if flat.get("days_over_10k_pct") is not None:
-            activity["days_over_10k_pct"] = int(flat["days_over_10k_pct"])
-        if flat.get("days_under_2k_pct") is not None:
-            activity["days_under_2k_pct"] = int(flat["days_under_2k_pct"])
-
-        # Body: map from flat keys and compute derived percentages
-        weight_kg = flat.get("latest_weight_kg")
-        fat_mass = flat.get("fat_mass_kg")
-        lean_mass = flat.get("lean_mass_kg")
-        if weight_kg is not None:
-            body["latest_weight_kg"] = round(float(weight_kg), 2)
-        if flat.get("bmi_avg") is not None:
-            body["bmi_avg"] = round(float(flat["bmi_avg"]), 1)
-        if flat.get("bmr_kcal") is not None:
-            body["bmr_kcal"] = int(flat["bmr_kcal"])
-        if fat_mass is not None:
-            body["fat_mass_kg"] = round(float(fat_mass), 2)
-        if flat.get("muscle_mass_kg") is not None:
-            body["muscle_mass_kg"] = round(float(flat["muscle_mass_kg"]), 2)
-        if lean_mass is not None:
-            body["lean_mass_kg"] = round(float(lean_mass), 2)
-        if flat.get("water_mass_kg") is not None:
-            body["water_mass_kg"] = round(float(flat["water_mass_kg"]), 2)
-        if flat.get("bone_mass_kg") is not None:
-            body["bone_mass_kg"] = round(float(flat["bone_mass_kg"]), 2)
-        if flat.get("visceral_fat") is not None:
-            body["visceral_fat"] = round(float(flat["visceral_fat"]), 2)
-        if weight_kg and weight_kg > 0 and fat_mass is not None:
-            body["derived_fat_mass_pct"] = round(100 * float(fat_mass) / float(weight_kg), 1)
-        if weight_kg and weight_kg > 0 and lean_mass is not None:
-            body["derived_lean_mass_pct"] = round(100 * float(lean_mass) / float(weight_kg), 1)
-
-        # Sleep
-        if flat.get("sleep_avg"):
-            sleep["total_sleep_time"] = flat["sleep_avg"]
-        if flat.get("sleep_efficiency_pct") is not None:
-            sleep["efficiency_pct"] = int(flat["sleep_efficiency_pct"])
-        if flat.get("nights_over_7h_pct") is not None:
-            sleep["nights_over_7h_pct"] = int(flat["nights_over_7h_pct"])
-        if flat.get("nights_under_5h_pct") is not None:
-            sleep["nights_under_5h_pct"] = int(flat["nights_under_5h_pct"])
-        if flat.get("time_in_bed"):
-            sleep["time_in_bed"] = flat["time_in_bed"]
-        if flat.get("sleep_latency_sec") is not None:
-            sleep["sleep_latency_sec"] = int(flat["sleep_latency_sec"])
-        if flat.get("snoring_min") is not None:
-            sleep["snoring_min"] = int(flat["snoring_min"])
-        if flat.get("overnight_hr_bpm") is not None:
-            sleep["overnight_hr_bpm"] = int(flat["overnight_hr_bpm"])
-        if flat.get("nights") is not None:
-            sleep["nights"] = int(flat["nights"])
-
-        # Cardio
-        if flat.get("awake_hr_avg_bpm") is not None:
-            cardio["awake_hr_avg_bpm"] = int(flat["awake_hr_avg_bpm"])
-        if flat.get("asleep_hr_avg_bpm") is not None:
-            cardio["asleep_hr_avg_bpm"] = int(flat["asleep_hr_avg_bpm"])
-        if flat.get("pwv_m_per_s") is not None:
-            cardio["pwv_m_per_s"] = round(float(flat["pwv_m_per_s"]), 2)
-        if flat.get("awake_spo2_avg_pct") is not None:
-            cardio["awake_spo2_avg_pct"] = int(flat["awake_spo2_avg_pct"])
-        if flat.get("awake_spo2_min_pct") is not None:
-            cardio["awake_spo2_min_pct"] = int(flat["awake_spo2_min_pct"])
-        if flat.get("measurements_under_90_pct") is not None:
-            cardio["measurements_under_90_pct"] = int(flat["measurements_under_90_pct"])
-
-        result: dict[str, Any] = {
-            "activity": activity,
-            "body": body,
-            "sleep": sleep,
-            "cardio": cardio,
-        }
-        if flat.get("report_period"):
-            result["report_period"] = flat["report_period"]
-        return result
 
     @staticmethod
     def _build_weight_records(df: pd.DataFrame) -> list[dict[str, Any]]:

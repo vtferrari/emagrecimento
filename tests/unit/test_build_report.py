@@ -2,6 +2,7 @@
 
 import pytest
 
+from emagrecimento.application.transformers.pdf_report_v2 import build_pdf_report_v2
 from emagrecimento.application.use_cases.build_report import BuildReportUseCase
 from emagrecimento.domain.entities import ZipData
 
@@ -286,9 +287,9 @@ class TestBuildReportUseCase:
         assert "is_probable_retention" in result["retention_flag"]
 
     def test_build_pdf_report_v2_returns_structure(self) -> None:
-        """_build_pdf_report_v2 returns structure with activity, body, sleep, cardio blocks."""
+        """build_pdf_report_v2 returns structure with activity, body, sleep, cardio blocks."""
         flat = {}
-        result = BuildReportUseCase._build_pdf_report_v2(flat)
+        result = build_pdf_report_v2(flat)
         assert "activity" in result
         assert "body" in result
         assert "sleep" in result
@@ -299,13 +300,13 @@ class TestBuildReportUseCase:
         assert isinstance(result["cardio"], dict)
 
     def test_build_pdf_report_v2_derives_fat_lean_pct(self) -> None:
-        """_build_pdf_report_v2 computes derived_fat_mass_pct and derived_lean_mass_pct from mass values."""
+        """build_pdf_report_v2 computes derived_fat_mass_pct and derived_lean_mass_pct from mass values."""
         flat = {
             "latest_weight_kg": 90.5,
             "fat_mass_kg": 19.8,
             "lean_mass_kg": 69.1,
         }
-        result = BuildReportUseCase._build_pdf_report_v2(flat)
+        result = build_pdf_report_v2(flat)
         assert result["body"]["derived_fat_mass_pct"] == pytest.approx(21.9, abs=0.1)
         assert result["body"]["derived_lean_mass_pct"] == pytest.approx(76.4, abs=0.1)
 

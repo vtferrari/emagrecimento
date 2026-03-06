@@ -32,6 +32,6 @@ Do not add production code without a corresponding test. When modifying existing
 
 ## Adding New Features (TDD)
 
-1. **New metric from PDF**: Write test in `test_pdf_metrics_parser.py` → Add regex in `pdf_metrics_parser.py` → Map in `_build_pdf_report_v2`.
+1. **New metric from PDF**: Write test in `test_pdf_metrics_parser.py` → Add regex in `pdf_metrics_parser.py` → Map in `application/transformers/pdf_report_v2.py` (`build_pdf_report_v2`).
 2. **New use case**: Write test → Create use case in `application/use_cases/` → Add factory in `container.py`.
 3. **New port**: Write test (mock the port) → Add abstract class in `interfaces.py` → Implement in infrastructure.

@@ -16,8 +16,8 @@ Dashboard de Emagrecimento: web app that combines MyFitnessPal (ZIP export) and 
 
 | Path | Purpose |
 |------|---------|
-| `src/emagrecimento/domain/` | Entities, value objects (no external deps) |
-| `src/emagrecimento/application/` | Use cases, interfaces (ports) |
+| `src/emagrecimento/domain/` | Entities, value objects. Uses pandas for ZipData DataFrames (accepted trade-off for tabular data). |
+| `src/emagrecimento/application/` | Use cases, interfaces (ports), services, transformers, presenters |
 | `src/emagrecimento/infrastructure/` | ZIP reader, PDF reader, PDF metrics parser |
 | `src/emagrecimento/container.py` | Composition root, dependency wiring |
 | `app.py` | Flask entry point |

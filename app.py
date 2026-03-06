@@ -4,7 +4,6 @@ Cutting Report Dashboard - Web application for weight loss metrics.
 """
 
 import io
-import math
 import sys
 from pathlib import Path
 
@@ -13,67 +12,18 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from flask import Flask, jsonify, render_template, request
 
+from emagrecimento.application.presenters.chatgpt_export import wrap_report_for_chatgpt
+from emagrecimento.application.serialization import sanitize_for_json
 from emagrecimento.container import (
     create_build_report_use_case,
     create_extract_pdf_use_case,
+    create_extract_user_info_use_case,
     create_extract_zip_use_case,
 )
-from emagrecimento.application.chatgpt_export import wrap_report_for_chatgpt
 from emagrecimento.domain.export_filename import build_export_filename
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB
-
-
-def _extract_user_info_from_files(zip_data, pdf_metrics):
-    """
-    Extract user info (weight, height, age, sex) from ZIP and PDF data.
-    Used to auto-fill form when user does not provide these values.
-    - Peso: from measures (last row) or PDF latest_weight_kg
-    - Altura: derived from PDF BMI + weight (height_cm = 100 * sqrt(weight/bmi))
-    - Idade: from PDF "30yo" pattern
-    - Sexo: from PDF "Biological Sex: Female/Male"
-    """
-    result = {}
-    weight_kg = None
-    if pdf_metrics and pdf_metrics.get("latest_weight_kg") is not None:
-        weight_kg = float(pdf_metrics["latest_weight_kg"])
-    if weight_kg is None and zip_data and not zip_data.measures.empty:
-        last = zip_data.measures.iloc[-1]
-        w = last.get("weight")
-        if w is not None and not math.isnan(w):
-            weight_kg = float(w)
-    if weight_kg is not None:
-        result["weight_kg"] = round(weight_kg, 1)
-
-    # Derive height from BMI when we have both weight and bmi
-    bmi = pdf_metrics.get("bmi_avg") if pdf_metrics else None
-    if bmi is not None and weight_kg is not None and float(bmi) > 0:
-        try:
-            height_cm = 100 * math.sqrt(float(weight_kg) / float(bmi))
-            if 100 <= height_cm <= 250:
-                result["height_cm"] = int(round(height_cm))
-        except (ValueError, TypeError):
-            pass
-
-    if pdf_metrics:
-        if pdf_metrics.get("age_years") is not None:
-            result["age"] = int(pdf_metrics["age_years"])
-        if pdf_metrics.get("biological_sex") is not None:
-            result["sex"] = pdf_metrics["biological_sex"]
-
-    return result
-
-
-def _sanitize_for_json(obj):
-    """Replace NaN/Inf with None so JSON is valid."""
-    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
-        return None
-    if isinstance(obj, dict):
-        return {k: _sanitize_for_json(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_sanitize_for_json(v) for v in obj]
-    return obj
 
 
 @app.route("/")
@@ -97,9 +47,10 @@ def extract_preview():
     try:
         extract_zip = create_extract_zip_use_case()
         extract_pdf = create_extract_pdf_use_case()
+        extract_user_info = create_extract_user_info_use_case()
         zip_data = extract_zip.execute(io.BytesIO(zip_file.read()))
         pdf_metrics = extract_pdf.execute(io.BytesIO(pdf_file.read()))
-        extracted = _extract_user_info_from_files(zip_data, pdf_metrics)
+        extracted = extract_user_info.execute(zip_data, pdf_metrics)
         return jsonify({"extracted": extracted})
     except FileNotFoundError as e:
         return jsonify({"error": str(e)}), 400
@@ -146,7 +97,8 @@ def process_files():
         pdf_metrics = extract_pdf.execute(io.BytesIO(pdf_file.read()))
 
         # Use extracted values from files when form fields are empty
-        extracted = _extract_user_info_from_files(zip_data, pdf_metrics)
+        extract_user_info = create_extract_user_info_use_case()
+        extracted = extract_user_info.execute(zip_data, pdf_metrics)
         user_info = {
             "name": name,
             "sex": sex or extracted.get("sex"),
@@ -172,7 +124,7 @@ def process_files():
             target_date=target_date,
             user_info=user_info,
         )
-        summary = _sanitize_for_json(summary)
+        summary = sanitize_for_json(summary)
 
         # Add user info and target_date to response for JSON export (use final values including extracted)
         summary["user"] = {
