@@ -118,3 +118,22 @@ class TestDashboardUI:
         assert 'id="pdfV2Body"' in html or "id='pdfV2Body'" in html
         assert 'id="pdfV2Sleep"' in html or "id='pdfV2Sleep'" in html
         assert 'id="pdfV2Cardio"' in html or "id='pdfV2Cardio'" in html
+
+    def test_metas_form_has_fat_and_carbs_fields(self) -> None:
+        """Metas override section has fat_g (Gordura) and carbs_g (Carboidratos) inputs."""
+        client = app.test_client()
+        response = client.get("/")
+        assert response.status_code == 200
+        html = response.data.decode("utf-8")
+        assert 'id="fatG"' in html or "id='fatG'" in html
+        assert 'id="carbsG"' in html or "id='carbsG'" in html
+        assert "Gordura" in html
+        assert "Carboidratos" in html
+
+    def test_dashboard_header_has_sticky_class(self) -> None:
+        """Dashboard header has sticky class for fixed positioning when scrolling."""
+        client = app.test_client()
+        response = client.get("/")
+        assert response.status_code == 200
+        html = response.data.decode("utf-8")
+        assert "dashboard-header--sticky" in html

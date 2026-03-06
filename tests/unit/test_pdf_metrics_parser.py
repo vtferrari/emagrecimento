@@ -73,3 +73,10 @@ class TestWithingsPdfMetricsParser:
         assert result["water_mass_kg"] == 48.3
         assert result["bone_mass_kg"] == 3.4
         assert result["visceral_fat"] == 3.2
+
+    def test_parser_extracts_age_and_sex(self) -> None:
+        """Parser extracts age_years and biological_sex for form pre-fill."""
+        text = "Sibele Schuantes 30yo Weight 66.3 kg Latest BMI 27.9 Cycle Diary Biological Sex: Female."
+        result = self.parser.parse(text)
+        assert result["age_years"] == 30
+        assert result["biological_sex"] == "F"

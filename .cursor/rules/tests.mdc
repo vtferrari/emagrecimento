@@ -1,0 +1,38 @@
+---
+description: Test conventions and TDD workflow
+globs: tests/**/*
+alwaysApply: false
+---
+
+# Test Conventions & TDD
+
+## TDD is Mandatory
+
+- **Red-Green-Refactor**: Write the test first, then implement. Never implement without a test.
+- Every new feature or modification must be driven by a failing test.
+- Run `pytest` after each change; all tests must pass before considering the task done.
+
+## Structure
+
+- `tests/unit/` - fast, isolated tests (mocks when needed)
+- `tests/integration/` - tests that hit real components (API, UI structure)
+
+## Running Tests
+
+```bash
+pytest
+pytest --cov=src/emagrecimento
+pytest tests/unit/ -v
+```
+
+## Patterns
+
+- Use `conftest.py` for shared fixtures.
+- Test classes: `TestWithingsPdfMetricsParser`, `TestBuildReportUseCase`, etc.
+- Integration tests: check DOM structure, API response shape, not pixel-perfect UI.
+
+## Adding Tests (First!)
+
+- New parser pattern → **first** add test in `test_pdf_metrics_parser.py`, then implement.
+- New use case logic → **first** add test in `test_build_report.py`, then implement.
+- New UI block → **first** add test in `test_dashboard_ui.py`, then implement.

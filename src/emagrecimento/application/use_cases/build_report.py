@@ -25,6 +25,8 @@ MIN_MA7_ROWS_FOR_TREND = 15
 ADHERENCE_TARGETS = {
     "calorie_range": [1800, 1950],
     "protein_g": 170,
+    "fat_g": None,
+    "carbs_g": None,
     "fiber_g": 25,
     "sodium_mg_max": 2500,
     "sessions_per_week": 4,
@@ -42,7 +44,7 @@ def compute_adherence_targets(
     """
     Compute personalized adherence targets from weight, height, sex, age.
     Uses Mifflin-St Jeor for BMR, 1.8 g/kg protein (cutting), 14g fiber/1000 kcal.
-    override: optional dict with calorie_min, calorie_max, protein_g, fiber_g to override.
+    override: optional dict with calorie_min, calorie_max, protein_g, fat_g, carbs_g, fiber_g to override.
     """
     targets: dict[str, Any] = dict(ADHERENCE_TARGETS)
     if override:
@@ -58,6 +60,10 @@ def compute_adherence_targets(
             ]
         if "protein_g" in override and override["protein_g"] is not None:
             targets["protein_g"] = int(override["protein_g"])
+        if "fat_g" in override and override["fat_g"] is not None:
+            targets["fat_g"] = int(override["fat_g"])
+        if "carbs_g" in override and override["carbs_g"] is not None:
+            targets["carbs_g"] = int(override["carbs_g"])
         if "fiber_g" in override and override["fiber_g"] is not None:
             targets["fiber_g"] = int(override["fiber_g"])
         return targets
@@ -140,7 +146,7 @@ class BuildReportUseCase:
         else:
             weight_for_targets = float(weight_for_targets)
         override = {}
-        for k in ("calorie_min", "calorie_max", "protein_g", "fiber_g"):
+        for k in ("calorie_min", "calorie_max", "protein_g", "fat_g", "carbs_g", "fiber_g"):
             v = user_info.get(k)
             if v is not None and v != "":
                 override[k] = int(v)

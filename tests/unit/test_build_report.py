@@ -354,6 +354,14 @@ class TestBuildReportUseCase:
         targets = result["meta"]["adherence_targets"]
         assert targets["protein_g"] == 100
 
+    def test_user_info_override_fat_and_carbs_in_targets(self, sample_zip_data: ZipData) -> None:
+        """user_info fat_g and carbs_g overrides are applied to adherence targets."""
+        user_info = {"fat_g": 65, "carbs_g": 150, "height_cm": 175, "sex": "M", "age": 35}
+        result = self.use_case.execute(sample_zip_data, {}, user_info=user_info)
+        targets = result["meta"]["adherence_targets"]
+        assert targets["fat_g"] == 65
+        assert targets["carbs_g"] == 150
+
     def test_weekly_adherence_uses_personalized_targets(self, sample_zip_data: ZipData) -> None:
         """Weekly adherence weekly_targets reflect personalized targets."""
         user_info = {"weight_kg": 67.0, "height_cm": 165, "sex": "F", "age": 30}

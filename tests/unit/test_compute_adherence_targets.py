@@ -82,6 +82,16 @@ class TestComputeAdherenceTargets:
         result = compute_adherence_targets(67.0, override={"fiber_g": 30})
         assert result["fiber_g"] == 30
 
+    def test_override_fat(self) -> None:
+        """Override fat_g when provided."""
+        result = compute_adherence_targets(67.0, override={"fat_g": 65})
+        assert result["fat_g"] == 65
+
+    def test_override_carbs(self) -> None:
+        """Override carbs_g when provided."""
+        result = compute_adherence_targets(67.0, override={"carbs_g": 150})
+        assert result["carbs_g"] == 150
+
     def test_override_takes_precedence_over_computed(self) -> None:
         """When override is provided, no BMR/protein computation is done."""
         result = compute_adherence_targets(
@@ -103,11 +113,13 @@ class TestComputeAdherenceTargets:
         assert low_cal["fiber_g"] == int(expected_fiber)
 
     def test_returns_all_required_keys(self) -> None:
-        """Result has calorie_range, protein_g, fiber_g, sodium_mg_max, sessions_per_week."""
+        """Result has calorie_range, protein_g, fat_g, carbs_g, fiber_g, sodium_mg_max, sessions_per_week."""
         result = compute_adherence_targets(70.0)
         assert "calorie_range" in result
         assert len(result["calorie_range"]) == 2
         assert "protein_g" in result
+        assert "fat_g" in result
+        assert "carbs_g" in result
         assert "fiber_g" in result
         assert "sodium_mg_max" in result
         assert "sessions_per_week" in result

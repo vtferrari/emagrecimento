@@ -1,0 +1,30 @@
+---
+description: Frontend conventions for JS, HTML, CSS
+globs: static/**/*,templates/**/*
+alwaysApply: false
+---
+
+# Frontend Conventions
+
+## Structure
+
+- `static/js/app.js` - main app logic, no framework
+- `static/css/style.css` - CSS variables in `:root`, dark theme with teal accent
+- `templates/index.html` - single-page dashboard
+
+## Styling
+
+- Use CSS variables: `--accent`, `--text-primary`, `--text-secondary`, `--bg-card`, `--border`.
+- Metric rows: `.metric-row` with `.metric-key` (label) and `.metric-value` (value).
+- Labels in Portuguese for user-facing text.
+
+## PDF Report Labels
+
+- All metric labels must be in Portuguese. Map keys in `pdfV2Labels` (app.js) and `labels` for flat pdf_report.
+- Use descriptive labels: "FC noturna (bpm)" not "overnight_hr_bpm", "Massa óssea (kg)" not "bone_mass_kg".
+
+## Adding New UI Blocks
+
+1. Add HTML in `templates/index.html` with appropriate ids.
+2. Add render logic in `renderDashboard()` in app.js.
+3. Add styles in style.css if needed.

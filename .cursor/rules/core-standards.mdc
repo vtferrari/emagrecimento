@@ -1,0 +1,34 @@
+---
+description: Core coding standards, Clean Architecture, and TDD for the project
+alwaysApply: true
+---
+
+# Emagrecimento - Core Standards
+
+## Critical: Clean Architecture + TDD
+
+- **Clean Architecture** is mandatory. Domain → Application → Infrastructure. Dependencies flow inward.
+- **TDD** is the implementation approach: write the test first (Red), implement to pass (Green), refactor (Refactor).
+- Never add or modify production code without a failing test that justifies it. No "implementation first, tests later".
+
+## Language
+
+- **Code and comments**: Always write in English (variables, functions, classes, docstrings, comments).
+- **User-facing text**: Portuguese (Brazil) - labels, messages, UI strings, responses to the user in chat.
+
+## Architecture
+
+- `domain` (no external deps) → `application` (use cases, ports) → `infrastructure` (adapters).
+- Wire dependencies in `container.py`; avoid importing infrastructure directly in use cases.
+
+## File Organization
+
+- `src/emagrecimento/` - main package
+- `tests/unit/` - unit tests, `tests/integration/` - integration tests
+- `scripts/` - CLI scripts (e.g. `extract_cutting_report.py`)
+
+## Conventions
+
+- Use type hints in Python.
+- Prefer `pathlib` over string paths when feasible.
+- Run `pytest` before committing; fix failing tests.

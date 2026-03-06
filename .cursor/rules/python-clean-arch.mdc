@@ -1,0 +1,37 @@
+---
+description: Python and Clean Architecture conventions
+globs: src/**/*.py
+alwaysApply: false
+---
+
+# Python & Clean Architecture
+
+## TDD Workflow
+
+1. **Red**: Write a failing test that describes the desired behavior.
+2. **Green**: Implement the minimum code to make the test pass.
+3. **Refactor**: Improve the code while keeping tests green.
+
+Do not add production code without a corresponding test. When modifying existing code, add or update tests first.
+
+## Domain Layer
+
+- Entities and value objects in `domain/`. No imports from application or infrastructure.
+- Value objects: immutable, validation in `__init__`, use `parse_number`, `normalize_text` from `value_objects.py`.
+
+## Application Layer
+
+- Use cases in `application/use_cases/`. One use case per file.
+- Ports (interfaces) in `application/interfaces.py`. Use `IZipReader`, `IPdfReader`, `IPdfMetricsParser`.
+- Use cases receive dependencies via constructor injection.
+
+## Infrastructure Layer
+
+- Adapters in `infrastructure/`. Implement ports from `interfaces.py`.
+- Parsers: use regex patterns in `PATTERNS` dict, fallback in `FALLBACK_PATTERNS`. Add `parse_number` for numeric keys.
+
+## Adding New Features (TDD)
+
+1. **New metric from PDF**: Write test in `test_pdf_metrics_parser.py` → Add regex in `pdf_metrics_parser.py` → Map in `_build_pdf_report_v2`.
+2. **New use case**: Write test → Create use case in `application/use_cases/` → Add factory in `container.py`.
+3. **New port**: Write test (mock the port) → Add abstract class in `interfaces.py` → Implement in infrastructure.

@@ -96,4 +96,80 @@ class TestApiProcess:
         assert "target_date" in data
         assert data["target_date"] == "2026-06-01"
         assert "user" in data
-        assert data["user"] == {"name": None, "sex": None, "height_cm": None, "age": None, "weight_kg": None}
+        # When form does not send user info, weight is extracted from measures (last row = 83.3)
+        assert data["user"]["name"] is None
+        assert data["user"]["sex"] is None
+        assert data["user"]["height_cm"] is None
+        assert data["user"]["age"] is None
+        assert data["user"]["weight_kg"] == 83.3  # extracted from measures
+
+        assert "suggested_export_filename" in data
+        assert data["suggested_export_filename"].endswith(".json")
+        assert "relatorio_" in data["suggested_export_filename"]  # no name -> relatorio
+
+    def test_suggested_export_filename_includes_user_name(self) -> None:
+        """suggested_export_filename includes user name when provided."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "target_date": "2026-06-01",
+                "name": "Vinicius",
+            },
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        fn = data["suggested_export_filename"]
+        assert fn.startswith("Vinicius_")
+        assert fn.endswith(".json")
+        # Format: Vinicius_YYYY-MM-DD_HH-mm-ss.json
+        parts = fn.replace(".json", "").split("_")
+        assert len(parts) >= 3
+
+    def test_extract_preview_returns_extracted_user_info(self) -> None:
+        """POST /api/extract-preview returns weight from measures when PDF has no metrics."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        response = client.post(
+            "/api/extract-preview",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+            },
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "extracted" in data
+        # Weight from measures (last row)
+        assert data["extracted"]["weight_kg"] == 83.3
+
+    def test_api_process_accepts_fat_and_carbs_overrides(self) -> None:
+        """API accepts fat_g and carbs_g in user_info and passes to adherence targets."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "target_date": "2026-06-01",
+                "fat_g": "65",
+                "carbs_g": "150",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        targets = data.get("meta", {}).get("adherence_targets") or data.get("nutrition", {}).get("adherence_targets")
+        assert targets is not None
+        assert targets.get("fat_g") == 65
+        assert targets.get("carbs_g") == 150

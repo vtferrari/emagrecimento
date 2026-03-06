@@ -50,6 +50,9 @@ class WithingsPdfMetricsParser(IPdfMetricsParser):
         "time_in_bed": r"Time\s+in\s+Bed\s*\(TIB\)?\s*([0-9]+h[0-9]{2})",
         "nights": r"([0-9]+)\s+nights?",
         "bmi_avg": r"BMI\s+([0-9]+(?:\.[0-9]+)?)\s*(?:Average|Latest)?",
+        # User demographics (for auto-filling form)
+        "age_years": r"(?:^|\s)([0-9]{1,3})\s*yo\b",
+        "biological_sex": r"Biological\s+Sex:\s*(Female|Male)",
     }
 
     # Fallback patterns (more permissive when primary fails)
@@ -103,9 +106,12 @@ class WithingsPdfMetricsParser(IPdfMetricsParser):
                 or key.endswith("_bpm")
                 or key.endswith("_sec")
                 or key.endswith("_min")
-                or key in ("visceral_fat", "nights", "pwv_m_per_s")
+                or key in ("visceral_fat", "nights", "pwv_m_per_s", "age_years")
             ):
                 parsed = parse_number(result[key])
                 result[key] = parsed if parsed is not None else result[key]
+            if key == "biological_sex":
+                val = str(result[key]).strip().lower()
+                result[key] = "F" if val == "female" else "M" if val == "male" else None
 
         return result

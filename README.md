@@ -2,7 +2,10 @@
 
 Aplicação web para visualizar métricas de cutting a partir do export do MyFitnessPal (ZIP) e do relatório médico da Withings (PDF).
 
-## Arquitetura (Clean Architecture)
+## Arquitetura e Desenvolvimento
+
+- **Clean Architecture**: domain → application → infrastructure.
+- **TDD**: Red-Green-Refactor. Testes primeiro, implementação depois.
 
 ```
 src/emagrecimento/
@@ -52,12 +55,18 @@ python scripts/extract_cutting_report.py arquivo.zip relatorio.pdf -o meu_relato
 
 Ver `scripts/README.md` para documentação completa.
 
-## Testes (TDD)
+## Testes (TDD obrigatório)
+
+O desenvolvimento segue TDD: escreva o teste que falha, implemente o mínimo para passar, refatore.
 
 ```bash
 pytest
 pytest --cov=src/emagrecimento
 ```
+
+## Cursor (IA)
+
+O projeto inclui regras, comandos e skills para o Cursor. Veja `.cursor/README.md` e `AGENTS.md`.
 
 ## Estrutura do projeto
 

@@ -62,6 +62,44 @@
         });
     }
 
+    function tryExtractAndPrefill() {
+        const zip = selectedZip || (fileInputZip.files && fileInputZip.files[0]);
+        const pdf = selectedPdf || (fileInputPdf.files && fileInputPdf.files[0]);
+        if (!zip || !pdf) return;
+
+        const formData = new FormData();
+        formData.append('zip_file', zip);
+        formData.append('pdf_file', pdf);
+
+        fetch('/api/extract-preview', {
+            method: 'POST',
+            body: formData,
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.error) return;
+                const ex = data.extracted || {};
+                // Pre-fill only empty fields (do not overwrite user input)
+                if (ex.weight_kg != null) {
+                    const el = document.getElementById('userWeight');
+                    if (el && !el.value) el.value = ex.weight_kg;
+                }
+                if (ex.height_cm != null) {
+                    const el = document.getElementById('userHeight');
+                    if (el && !el.value) el.value = ex.height_cm;
+                }
+                if (ex.age != null) {
+                    const el = document.getElementById('userAge');
+                    if (el && !el.value) el.value = ex.age;
+                }
+                if (ex.sex != null) {
+                    const el = document.getElementById('userSex');
+                    if (el && !el.value) el.value = ex.sex;
+                }
+            })
+            .catch(() => {});
+    }
+
     setupDropzone(dropzoneZip, 'zip', (file) => {
         if (!file.name.toLowerCase().endsWith('.zip')) {
             showError('Selecione um arquivo .zip');
@@ -70,6 +108,7 @@
         selectedZip = file;
         zipFilename.textContent = file.name;
         dropzoneZip.classList.add('has-file');
+        tryExtractAndPrefill();
     });
 
     setupDropzone(dropzonePdf, 'pdf', (file) => {
@@ -80,6 +119,7 @@
         selectedPdf = file;
         pdfFilename.textContent = file.name;
         dropzonePdf.classList.add('has-file');
+        tryExtractAndPrefill();
     });
 
     fileInputZip.addEventListener('change', (e) => {
@@ -88,6 +128,7 @@
             selectedZip = file;
             zipFilename.textContent = file.name;
             dropzoneZip.classList.add('has-file');
+            tryExtractAndPrefill();
         }
     });
 
@@ -97,6 +138,7 @@
             selectedPdf = file;
             pdfFilename.textContent = file.name;
             dropzonePdf.classList.add('has-file');
+            tryExtractAndPrefill();
         }
     });
 
@@ -120,12 +162,26 @@
             showError('Nenhum relatório para exportar. Calcule primeiro.');
             return;
         }
+        const filename = lastReportData.suggested_export_filename || (() => {
+            const user = lastReportData.user || {};
+            const rawName = (user.name || 'relatorio').trim();
+            const namePart = (rawName ? rawName.replace(/\s+/g, '_').replace(/[/\\:*?"<>|]/g, '') : 'relatorio');
+            const now = new Date();
+            const datePart = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + '_' +
+                String(now.getHours()).padStart(2, '0') + '-' +
+                String(now.getMinutes()).padStart(2, '0') + '-' +
+                String(now.getSeconds()).padStart(2, '0');
+            return namePart + '_' + datePart + '.json';
+        })();
+
         const jsonStr = JSON.stringify(lastReportData, null, 2);
         const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'cutting_report.json';
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
     });
@@ -155,6 +211,20 @@
         if (heightEl) heightEl.value = '';
         const ageEl = document.getElementById('userAge');
         if (ageEl) ageEl.value = '';
+        const weightEl = document.getElementById('userWeight');
+        if (weightEl) weightEl.value = '';
+        const calorieMinEl = document.getElementById('calorieMin');
+        if (calorieMinEl) calorieMinEl.value = '';
+        const calorieMaxEl = document.getElementById('calorieMax');
+        if (calorieMaxEl) calorieMaxEl.value = '';
+        const proteinGEl = document.getElementById('proteinG');
+        if (proteinGEl) proteinGEl.value = '';
+        const fatGEl = document.getElementById('fatG');
+        if (fatGEl) fatGEl.value = '';
+        const carbsGEl = document.getElementById('carbsG');
+        if (carbsGEl) carbsGEl.value = '';
+        const fiberGEl = document.getElementById('fiberG');
+        if (fiberGEl) fiberGEl.value = '';
     });
 
     function showError(msg) {
@@ -173,6 +243,8 @@
         const calorieMin = document.getElementById('calorieMin')?.value;
         const calorieMax = document.getElementById('calorieMax')?.value;
         const proteinG = document.getElementById('proteinG')?.value;
+        const fatG = document.getElementById('fatG')?.value;
+        const carbsG = document.getElementById('carbsG')?.value;
         const fiberG = document.getElementById('fiberG')?.value;
         return {
             target_date: targetDate || null,
@@ -184,6 +256,8 @@
             calorie_min: calorieMin ? parseInt(calorieMin, 10) : null,
             calorie_max: calorieMax ? parseInt(calorieMax, 10) : null,
             protein_g: proteinG ? parseInt(proteinG, 10) : null,
+            fat_g: fatG ? parseInt(fatG, 10) : null,
+            carbs_g: carbsG ? parseInt(carbsG, 10) : null,
             fiber_g: fiberG ? parseInt(fiberG, 10) : null,
         };
     }
@@ -211,6 +285,8 @@
         if (userParams.calorie_min != null) formData.append('calorie_min', userParams.calorie_min);
         if (userParams.calorie_max != null) formData.append('calorie_max', userParams.calorie_max);
         if (userParams.protein_g != null) formData.append('protein_g', userParams.protein_g);
+        if (userParams.fat_g != null) formData.append('fat_g', userParams.fat_g);
+        if (userParams.carbs_g != null) formData.append('carbs_g', userParams.carbs_g);
         if (userParams.fiber_g != null) formData.append('fiber_g', userParams.fiber_g);
 
         try {

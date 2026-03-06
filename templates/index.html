@@ -63,6 +63,8 @@
                             <input type="number" id="calorieMin" name="calorie_min" placeholder="Cal min" min="800" max="4000" step="50">
                             <input type="number" id="calorieMax" name="calorie_max" placeholder="Cal max" min="800" max="4000" step="50">
                             <input type="number" id="proteinG" name="protein_g" placeholder="Proteína (g)" min="50" max="300" step="5">
+                            <input type="number" id="fatG" name="fat_g" placeholder="Gordura (g)" min="20" max="150" step="5">
+                            <input type="number" id="carbsG" name="carbs_g" placeholder="Carboidratos (g)" min="50" max="400" step="10">
                             <input type="number" id="fiberG" name="fiber_g" placeholder="Fibra (g)" min="10" max="50" step="1">
                         </div>
                     </div>
@@ -72,7 +74,7 @@
         </section>
 
         <section class="dashboard hidden" id="dashboard">
-            <div class="dashboard-header">
+            <div class="dashboard-header dashboard-header--sticky">
                 <div class="dashboard-header-left">
                     <div class="file-status" id="fileStatus"></div>
                     <div class="user-info-summary" id="userInfoSummary"></div>
