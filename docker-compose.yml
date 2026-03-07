@@ -5,3 +5,10 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
+    networks:
+      - npm_network
+
+networks:
+  npm_network:
+    name: npm_network
+    external: true
