@@ -1,0 +1,7 @@
+services:
+  emagrecimento:
+    build: .
+    container_name: emagrecimento
+    restart: unless-stopped
+    ports:
+      - "5000:5000"

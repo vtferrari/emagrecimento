@@ -26,7 +26,17 @@ src/emagrecimento/
 
 ## Como rodar
 
-### 1. Instalar (editable para desenvolvimento)
+### Docker (produção / homelab)
+
+Para deploy no Raspberry Pi 5 com Nginx Proxy Manager e SSL em `fit.vtferrari.space`, veja [DEPLOY.md](DEPLOY.md).
+
+```bash
+docker compose up -d
+```
+
+### Desenvolvimento local
+
+#### 1. Instalar (editable para desenvolvimento)
 
 ```bash
 pip install -e ".[dev]"
@@ -38,7 +48,7 @@ Ou apenas:
 pip install -r requirements.txt
 ```
 
-### 2. Iniciar o servidor web
+#### 2. Iniciar o servidor web
 
 ```bash
 python app.py
@@ -46,7 +56,7 @@ python app.py
 
 Acesse [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
-### 3. Ou usar CLI (script)
+#### 3. Ou usar CLI (script)
 
 ```bash
 python scripts/extract_cutting_report.py arquivo.zip relatorio.pdf

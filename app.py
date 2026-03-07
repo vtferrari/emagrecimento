@@ -4,6 +4,7 @@ Cutting Report Dashboard - Web application for weight loss metrics.
 """
 
 import io
+import os
 import sys
 from pathlib import Path
 
@@ -146,4 +147,5 @@ def process_files():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(debug=True, port=port)
