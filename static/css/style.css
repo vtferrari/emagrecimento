@@ -273,6 +273,22 @@ body {
     align-items: center;
 }
 
+.btn-clear-storage {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-clear-storage:hover {
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
 .btn-export-json {
     padding: 0.5rem 1rem;
     background: var(--bg-secondary);

@@ -18,6 +18,54 @@
     let selectedPdf = null;
     let lastReportData = null;
 
+    // Restore saved session on load (report, form fields, files)
+    (function initRestore() {
+        if (typeof emagrecimentoStorage === 'undefined') return;
+        emagrecimentoStorage.load().then((session) => {
+            if (!session) return;
+            const formFields = session.formFields || {};
+            // Restore form fields
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && val != null && val !== '') el.value = val;
+            };
+            setVal('targetDate', formFields.target_date);
+            setVal('userName', formFields.name);
+            setVal('userSex', formFields.sex);
+            setVal('userHeight', formFields.height_cm);
+            setVal('userAge', formFields.age);
+            setVal('userWeight', formFields.weight_kg);
+            setVal('calorieMin', formFields.calorie_min);
+            setVal('calorieMax', formFields.calorie_max);
+            setVal('proteinG', formFields.protein_g);
+            setVal('fatG', formFields.fat_g);
+            setVal('carbsG', formFields.carbs_g);
+            setVal('fiberG', formFields.fiber_g);
+            // Restore files
+            if (session.zipFile) {
+                selectedZip = session.zipFile;
+                zipFilename.textContent = session.zipFilename || session.zipFile.name;
+                dropzoneZip.classList.add('has-file');
+            }
+            if (session.pdfFile) {
+                selectedPdf = session.pdfFile;
+                pdfFilename.textContent = session.pdfFilename || session.pdfFile.name;
+                dropzonePdf.classList.add('has-file');
+            }
+            // Restore dashboard if we have report
+            if (session.report && session.report.report) {
+                lastReportData = session.report;
+                const zipName = session.zipFilename || (session.zipFile && session.zipFile.name);
+                const pdfName = session.pdfFilename || (session.pdfFile && session.pdfFile.name);
+                document.getElementById('fileStatus').textContent =
+                    (zipName && pdfName) ? 'Processado: ' + zipName + ' + ' + pdfName : 'Dados restaurados';
+                renderDashboard(session.report.report);
+                uploadSection.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+            }
+        }).catch(() => {});
+    })();
+
     // Set default target date (90 days from today)
     (function setDefaultTargetDate() {
         const targetDateEl = document.getElementById('targetDate');
@@ -193,6 +241,9 @@
         selectedZip = null;
         selectedPdf = null;
         lastReportData = null;
+        if (typeof emagrecimentoStorage !== 'undefined') {
+            emagrecimentoStorage.clear().catch(() => {});
+        }
         zipFilename.textContent = 'Arraste ou clique';
         pdfFilename.textContent = 'Arraste ou clique';
         dropzoneZip.classList.remove('has-file');
@@ -228,6 +279,28 @@
         if (fiberGEl) fiberGEl.value = '';
     });
 
+    const btnClearStorage = document.getElementById('btnClearStorage');
+    if (btnClearStorage) {
+        btnClearStorage.addEventListener('click', () => {
+            if (typeof emagrecimentoStorage !== 'undefined') {
+                emagrecimentoStorage.clear().then(() => {
+                    showError('Dados salvos removidos. Faça um novo upload para recalcular.');
+                    dashboard.classList.add('hidden');
+                    uploadSection.classList.remove('hidden');
+                    selectedZip = null;
+                    selectedPdf = null;
+                    lastReportData = null;
+                    zipFilename.textContent = 'Arraste ou clique';
+                    pdfFilename.textContent = 'Arraste ou clique';
+                    dropzoneZip.classList.remove('has-file');
+                    dropzonePdf.classList.remove('has-file');
+                    fileInputZip.value = '';
+                    fileInputPdf.value = '';
+                }).catch(() => showError('Erro ao limpar dados.'));
+            }
+        });
+    }
+
     function showError(msg) {
         errorMessage.textContent = msg;
         errorEl.classList.remove('hidden');
@@ -260,6 +333,24 @@
             fat_g: fatG ? parseInt(fatG, 10) : null,
             carbs_g: carbsG ? parseInt(carbsG, 10) : null,
             fiber_g: fiberG ? parseInt(fiberG, 10) : null,
+        };
+    }
+
+    function getFormFieldsForStorage() {
+        const get = (id) => (document.getElementById(id)?.value ?? '') || null;
+        return {
+            target_date: get('targetDate'),
+            name: get('userName')?.trim() || null,
+            sex: get('userSex'),
+            height_cm: get('userHeight'),
+            age: get('userAge'),
+            weight_kg: get('userWeight'),
+            calorie_min: get('calorieMin'),
+            calorie_max: get('calorieMax'),
+            protein_g: get('proteinG'),
+            fat_g: get('fatG'),
+            carbs_g: get('carbsG'),
+            fiber_g: get('fiberG'),
         };
     }
 
@@ -309,6 +400,18 @@
             renderDashboard(data.report);
             uploadSection.classList.add('hidden');
             dashboard.classList.remove('hidden');
+
+            // Persist to browser storage so user does not need to re-upload on next visit
+            if (typeof emagrecimentoStorage !== 'undefined') {
+                emagrecimentoStorage.save({
+                    report: data,
+                    formFields: getFormFieldsForStorage(),
+                    zipFile: zipFile,
+                    zipFilename: zipFile.name,
+                    pdfFile: pdfFile,
+                    pdfFilename: pdfFile.name,
+                }).catch(() => {});
+            }
         } catch (err) {
             showError(err.message);
         } finally {

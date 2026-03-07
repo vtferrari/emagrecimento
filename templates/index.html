@@ -80,6 +80,7 @@
                     <div class="user-info-summary" id="userInfoSummary"></div>
                 </div>
                 <div class="dashboard-actions">
+                    <button type="button" class="btn-clear-storage" id="btnClearStorage" title="Remove dados salvos do navegador">Limpar dados salvos</button>
                     <button type="button" class="btn-export-json" id="exportJsonBtn">Exportar JSON</button>
                     <button type="button" class="btn-new-upload" id="btnNewUpload">Novo upload</button>
                 </div>
@@ -314,6 +315,7 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

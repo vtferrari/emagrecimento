@@ -137,3 +137,20 @@ class TestDashboardUI:
         assert response.status_code == 200
         html = response.data.decode("utf-8")
         assert "dashboard-header--sticky" in html
+
+    def test_clear_storage_button_exists(self) -> None:
+        """Dashboard has clear storage button for removing persisted session data."""
+        client = app.test_client()
+        response = client.get("/")
+        assert response.status_code == 200
+        html = response.data.decode("utf-8")
+        assert 'id="btnClearStorage"' in html or "id='btnClearStorage'" in html
+        assert "Limpar dados salvos" in html
+
+    def test_storage_script_loaded(self) -> None:
+        """Page loads storage.js for IndexedDB persistence."""
+        client = app.test_client()
+        response = client.get("/")
+        assert response.status_code == 200
+        html = response.data.decode("utf-8")
+        assert "storage.js" in html
