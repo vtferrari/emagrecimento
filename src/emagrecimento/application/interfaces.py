@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Any, BinaryIO, Union
 
 from emagrecimento.domain.entities import ZipData
+from emagrecimento.domain.withings_zip import WithingsHealthRecord
 
 
 class IZipReader(ABC):
@@ -32,4 +33,13 @@ class IPdfMetricsParser(ABC):
     @abstractmethod
     def parse(self, text: str) -> dict[str, Any]:
         """Parse metrics from PDF text. Returns dict of metric name -> value."""
+        ...
+
+
+class WithingsZipRepository(ABC):
+    """Port for loading Withings health data from ZIP export."""
+
+    @abstractmethod
+    def load(self, zip_bytes: bytes | None) -> WithingsHealthRecord | None:
+        """Load WithingsHealthRecord from ZIP bytes. Returns None if invalid or empty."""
         ...

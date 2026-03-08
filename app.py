@@ -15,11 +15,13 @@ from flask import Flask, jsonify, render_template, request
 
 from emagrecimento.application.presenters.chatgpt_export import wrap_report_for_chatgpt
 from emagrecimento.application.serialization import sanitize_for_json
+from emagrecimento.application.serializers.withings_zip import withings_health_record_to_dict
 from emagrecimento.container import (
     create_build_report_use_case,
     create_extract_pdf_use_case,
     create_extract_user_info_use_case,
     create_extract_zip_use_case,
+    create_get_withings_zip_use_case,
 )
 from emagrecimento.domain.export_filename import build_export_filename
 
@@ -63,6 +65,7 @@ def extract_preview():
 def process_files():
     zip_file = request.files.get("zip_file")
     pdf_file = request.files.get("pdf_file")
+    withings_zip_file = request.files.get("withings_zip_file")
     target_date = request.form.get("target_date", "").strip()
     name = request.form.get("name", "").strip() or None
     sex = request.form.get("sex", "").strip() or None
@@ -97,6 +100,9 @@ def process_files():
         zip_data = extract_zip.execute(io.BytesIO(zip_file.read()))
         pdf_metrics = extract_pdf.execute(io.BytesIO(pdf_file.read()))
 
+        withings_zip_bytes = withings_zip_file.read() if withings_zip_file and withings_zip_file.filename else None
+        withings_zip_record = create_get_withings_zip_use_case().execute(withings_zip_bytes)
+
         # Use extracted values from files when form fields are empty
         extract_user_info = create_extract_user_info_use_case()
         extracted = extract_user_info.execute(zip_data, pdf_metrics)
@@ -126,6 +132,20 @@ def process_files():
             user_info=user_info,
         )
         summary = sanitize_for_json(summary)
+
+        summary["withings_zip"] = (
+            withings_health_record_to_dict(withings_zip_record)
+            if withings_zip_record
+            else None
+        )
+        if withings_zip_record and (
+            summary.get("comparison", {}).get("steps_withings") is None
+        ):
+            avg_steps = withings_zip_record.avg_daily_steps
+            if avg_steps is not None:
+                if "comparison" not in summary:
+                    summary["comparison"] = {}
+                summary["comparison"]["steps_withings"] = int(avg_steps)
 
         # Add user info and target_date to response for JSON export (use final values including extracted)
         summary["user"] = {

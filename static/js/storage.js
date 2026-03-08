@@ -27,7 +27,7 @@
     window.emagrecimentoStorage = {
         /**
          * Save session: report, form fields, and file blobs.
-         * @param {Object} data - { report, formFields, zipFile, zipFilename, pdfFile, pdfFilename }
+         * @param {Object} data - { report, formFields, zipFile, zipFilename, pdfFile, pdfFilename, withingsZipFile, withingsZipFilename }
          */
         async save(data) {
             const db = await openDB();
@@ -40,6 +40,7 @@
                     formFields: data.formFields || {},
                     zipFilename: data.zipFilename || null,
                     pdfFilename: data.pdfFilename || null,
+                    withingsZipFilename: data.withingsZipFilename || null,
                     savedAt: new Date().toISOString(),
                 };
                 if (data.zipFile instanceof Blob) {
@@ -47,6 +48,9 @@
                 }
                 if (data.pdfFile instanceof Blob) {
                     entry.pdfBlob = data.pdfFile;
+                }
+                if (data.withingsZipFile instanceof Blob) {
+                    entry.withingsZipBlob = data.withingsZipFile;
                 }
                 const req = store.put(entry);
                 req.onsuccess = () => resolve();
@@ -74,11 +78,15 @@
                     }
                     let zipFile = null;
                     let pdfFile = null;
+                    let withingsZipFile = null;
                     if (row.zipBlob && row.zipFilename) {
                         zipFile = new File([row.zipBlob], row.zipFilename, { type: 'application/zip' });
                     }
                     if (row.pdfBlob && row.pdfFilename) {
                         pdfFile = new File([row.pdfBlob], row.pdfFilename, { type: 'application/pdf' });
+                    }
+                    if (row.withingsZipBlob && row.withingsZipFilename) {
+                        withingsZipFile = new File([row.withingsZipBlob], row.withingsZipFilename, { type: 'application/zip' });
                     }
                     db.close();
                     resolve({
@@ -88,6 +96,8 @@
                         zipFilename: row.zipFilename || null,
                         pdfFile,
                         pdfFilename: row.pdfFilename || null,
+                        withingsZipFile,
+                        withingsZipFilename: row.withingsZipFilename || null,
                         savedAt: row.savedAt,
                     });
                 };

@@ -1,10 +1,13 @@
 (function () {
     const dropzoneZip = document.getElementById('dropzoneZip');
     const dropzonePdf = document.getElementById('dropzonePdf');
+    const dropzoneWithingsZip = document.getElementById('dropzoneWithingsZip');
     const fileInputZip = document.getElementById('fileInputZip');
     const fileInputPdf = document.getElementById('fileInputPdf');
+    const fileInputWithingsZip = document.getElementById('fileInputWithingsZip');
     const zipFilename = document.getElementById('zipFilename');
     const pdfFilename = document.getElementById('pdfFilename');
+    const withingsZipFilename = document.getElementById('withingsZipFilename');
     const uploadSection = document.getElementById('uploadSection');
     const dashboard = document.getElementById('dashboard');
     const loading = document.getElementById('loading');
@@ -14,8 +17,12 @@
     let weightChart = null;
     let nutritionChart = null;
     let exerciseChart = null;
+    let wzWeightChart = null;
+    let wzSleepChart = null;
+    let wzStepsChart = null;
     let selectedZip = null;
     let selectedPdf = null;
+    let selectedWithingsZip = null;
     let lastReportData = null;
 
     // Restore saved session on load (report, form fields, files)
@@ -52,13 +59,21 @@
                 pdfFilename.textContent = session.pdfFilename || session.pdfFile.name;
                 dropzonePdf.classList.add('has-file');
             }
+            if (session.withingsZipFile && dropzoneWithingsZip) {
+                selectedWithingsZip = session.withingsZipFile;
+                withingsZipFilename.textContent = session.withingsZipFilename || session.withingsZipFile.name;
+                dropzoneWithingsZip.classList.add('has-file');
+            }
             // Restore dashboard if we have report
             if (session.report && session.report.report) {
                 lastReportData = session.report;
                 const zipName = session.zipFilename || (session.zipFile && session.zipFile.name);
                 const pdfName = session.pdfFilename || (session.pdfFile && session.pdfFile.name);
+                const wzName = session.withingsZipFilename || (session.withingsZipFile && session.withingsZipFile.name);
+                const statusParts = [zipName, pdfName];
+                if (wzName) statusParts.push(wzName);
                 document.getElementById('fileStatus').textContent =
-                    (zipName && pdfName) ? 'Processado: ' + zipName + ' + ' + pdfName : 'Dados restaurados';
+                    (zipName && pdfName) ? 'Processado: ' + statusParts.join(' + ') : 'Dados restaurados';
                 renderDashboard(session.report.report);
                 uploadSection.classList.add('hidden');
                 dashboard.classList.remove('hidden');
@@ -170,6 +185,16 @@
         tryExtractAndPrefill();
     });
 
+    setupDropzone(dropzoneWithingsZip, 'withings_zip', (file) => {
+        if (!file.name.toLowerCase().endsWith('.zip')) {
+            showError('Selecione um arquivo .zip');
+            return;
+        }
+        selectedWithingsZip = file;
+        withingsZipFilename.textContent = file.name;
+        dropzoneWithingsZip.classList.add('has-file');
+    });
+
     fileInputZip.addEventListener('change', (e) => {
         const file = e.target.files && e.target.files[0];
         if (file) {
@@ -190,10 +215,20 @@
         }
     });
 
+    fileInputWithingsZip.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+            selectedWithingsZip = file;
+            withingsZipFilename.textContent = file.name;
+            dropzoneWithingsZip.classList.add('has-file');
+        }
+    });
+
     document.getElementById('btnCalculate').addEventListener('click', () => {
         // Use files from inputs directly (robust when selected via label)
         const zipFile = selectedZip || (fileInputZip.files && fileInputZip.files[0]);
         const pdfFile = selectedPdf || (fileInputPdf.files && fileInputPdf.files[0]);
+        const withingsZipFile = selectedWithingsZip || (fileInputWithingsZip.files && fileInputWithingsZip.files[0]);
         if (!zipFile) {
             showError('Selecione o arquivo ZIP primeiro.');
             return;
@@ -202,7 +237,7 @@
             showError('Selecione o arquivo PDF primeiro.');
             return;
         }
-        processFiles(zipFile, pdfFile);
+        processFiles(zipFile, pdfFile, withingsZipFile);
     });
 
     document.getElementById('exportJsonBtn').addEventListener('click', () => {
@@ -240,16 +275,20 @@
         uploadSection.classList.remove('hidden');
         selectedZip = null;
         selectedPdf = null;
+        selectedWithingsZip = null;
         lastReportData = null;
         if (typeof emagrecimentoStorage !== 'undefined') {
             emagrecimentoStorage.clear().catch(() => {});
         }
         zipFilename.textContent = 'Arraste ou clique';
         pdfFilename.textContent = 'Arraste ou clique';
+        withingsZipFilename.textContent = 'Arraste ou clique';
         dropzoneZip.classList.remove('has-file');
         dropzonePdf.classList.remove('has-file');
+        dropzoneWithingsZip.classList.remove('has-file');
         fileInputZip.value = '';
         fileInputPdf.value = '';
+        fileInputWithingsZip.value = '';
         // Reset form (keep target date default)
         const d = new Date();
         d.setDate(d.getDate() + 90);
@@ -289,13 +328,17 @@
                     uploadSection.classList.remove('hidden');
                     selectedZip = null;
                     selectedPdf = null;
+                    selectedWithingsZip = null;
                     lastReportData = null;
                     zipFilename.textContent = 'Arraste ou clique';
                     pdfFilename.textContent = 'Arraste ou clique';
+                    withingsZipFilename.textContent = 'Arraste ou clique';
                     dropzoneZip.classList.remove('has-file');
                     dropzonePdf.classList.remove('has-file');
+                    dropzoneWithingsZip.classList.remove('has-file');
                     fileInputZip.value = '';
                     fileInputPdf.value = '';
+                    fileInputWithingsZip.value = '';
                 }).catch(() => showError('Erro ao limpar dados.'));
             }
         });
@@ -354,7 +397,7 @@
         };
     }
 
-    async function processFiles(zipFile, pdfFile) {
+    async function processFiles(zipFile, pdfFile, withingsZipFile) {
         loading.classList.remove('hidden');
         errorEl.classList.add('hidden');
 
@@ -368,6 +411,7 @@
         const formData = new FormData();
         formData.append('zip_file', zipFile);
         formData.append('pdf_file', pdfFile);
+        if (withingsZipFile) formData.append('withings_zip_file', withingsZipFile);
         formData.append('target_date', userParams.target_date);
         if (userParams.name) formData.append('name', userParams.name);
         if (userParams.sex) formData.append('sex', userParams.sex);
@@ -393,8 +437,10 @@
                 throw new Error(data.error || 'Erro ao processar arquivos');
             }
 
+            const statusParts = [zipFile.name, pdfFile.name];
+            if (withingsZipFile) statusParts.push(withingsZipFile.name);
             document.getElementById('fileStatus').textContent =
-                `Processado: ${zipFile.name} + ${pdfFile.name}`;
+                'Processado: ' + statusParts.join(' + ');
 
             lastReportData = data;
             renderDashboard(data.report);
@@ -403,14 +449,19 @@
 
             // Persist to browser storage so user does not need to re-upload on next visit
             if (typeof emagrecimentoStorage !== 'undefined') {
-                emagrecimentoStorage.save({
+                const saveData = {
                     report: data,
                     formFields: getFormFieldsForStorage(),
                     zipFile: zipFile,
                     zipFilename: zipFile.name,
                     pdfFile: pdfFile,
                     pdfFilename: pdfFile.name,
-                }).catch(() => {});
+                };
+                if (withingsZipFile) {
+                    saveData.withingsZipFile = withingsZipFile;
+                    saveData.withingsZipFilename = withingsZipFile.name;
+                }
+                emagrecimentoStorage.save(saveData).catch(() => {});
             }
         } catch (err) {
             showError(err.message);
@@ -814,6 +865,184 @@
                 sleepContainer.innerHTML = '<p class="empty-state">Sem dados de sono</p>';
             }
         }
+
+        // Withings ZIP (daily history)
+        if (data.withings_zip) {
+            renderWithingsZip(data.withings_zip);
+        }
+    }
+
+    function renderWithingsZip(wz) {
+        const card = document.getElementById('withingsZipCard');
+        if (!card) return;
+        card.classList.remove('hidden');
+
+        const fmtDelta = (v) => (v == null ? '' : (v >= 0 ? '+' : '') + v);
+        const deltaClass = (v) => (v == null ? '' : v > 0 ? 'positive' : v < 0 ? 'negative' : '');
+
+        // Body composition
+        const bc = wz.body_composition || {};
+        const latest = bc.latest || {};
+        const first = bc.first || {};
+        const delta = bc.delta || {};
+        const bodyEl = document.getElementById('wzBodyContent');
+        if (bodyEl) {
+            const rows = [];
+            if (latest.weight_kg != null) {
+                const d = delta.weight_kg;
+                rows.push(['Peso atual', latest.weight_kg + ' kg' + (d != null ? ' <span class="stat-value ' + deltaClass(d) + '">(' + fmtDelta(d) + ' kg)</span>' : '')]);
+            }
+            if (latest.fat_mass_kg != null) rows.push(['Gordura', latest.fat_mass_kg + ' kg' + (latest.fat_mass_pct != null ? ' (' + latest.fat_mass_pct + '%)' : '')]);
+            if (latest.muscle_mass_kg != null) rows.push(['Músculo', latest.muscle_mass_kg + ' kg']);
+            if (latest.visceral_fat != null) rows.push(['Gordura visceral', latest.visceral_fat]);
+            if (latest.metabolic_age != null) rows.push(['Idade metabólica', latest.metabolic_age + ' anos']);
+            if (latest.bmr_kcal != null) rows.push(['BMR', latest.bmr_kcal + ' kcal']);
+            bodyEl.innerHTML = rows.length ? rows.map(([k, v]) => '<div class="metric-row"><span class="metric-key">' + k + '</span><span class="metric-value">' + v + '</span></div>').join('') : '<p class="empty-state">Sem dados</p>';
+        }
+
+        // Cardiovascular
+        const cardio = wz.cardiovascular || {};
+        const hr = cardio.heart_rate || {};
+        const ecg = cardio.ecg_summary || {};
+        const cardioEl = document.getElementById('wzCardioContent');
+        if (cardioEl) {
+            const rows = [];
+            if (hr.mean != null) rows.push(['FC média', hr.mean + ' bpm']);
+            if (hr.min != null) rows.push(['FC mín', hr.min + ' bpm']);
+            if (hr.max != null) rows.push(['FC máx', hr.max + ' bpm']);
+            if (ecg) rows.push(['ECGs', ecg.total + ' registros, ' + (ecg.normal || 0) + ' normais']);
+            cardioEl.innerHTML = rows.length ? rows.map(([k, v]) => '<div class="metric-row"><span class="metric-key">' + k + '</span><span class="metric-value">' + v + '</span></div>').join('') : '<p class="empty-state">Sem dados</p>';
+        }
+
+        // Sleep
+        const slp = wz.sleep || {};
+        const slpSummary = slp.summary || {};
+        const slpEl = document.getElementById('wzSleepContent');
+        if (slpEl) {
+            const rows = [];
+            if (slpSummary.total_nights != null) rows.push(['Noites', slpSummary.total_nights]);
+            if (slpSummary.avg_total_h != null) rows.push(['Média total', slpSummary.avg_total_h + ' h']);
+            if (slpSummary.avg_deep_h != null) rows.push(['Profundo', slpSummary.avg_deep_h + ' h']);
+            if (slpSummary.avg_rem_h != null) rows.push(['REM', slpSummary.avg_rem_h + ' h']);
+            if (slpSummary.avg_hr_mean != null) rows.push(['FC noturna média', slpSummary.avg_hr_mean + ' bpm']);
+            slpEl.innerHTML = rows.length ? rows.map(([k, v]) => '<div class="metric-row"><span class="metric-key">' + k + '</span><span class="metric-value">' + v + '</span></div>').join('') : '<p class="empty-state">Sem dados</p>';
+        }
+
+        // Activity
+        const act = wz.activity || {};
+        const actSummary = act.summary || {};
+        const actEl = document.getElementById('wzActivityContent');
+        if (actEl) {
+            const rows = [];
+            if (actSummary.avg_daily_steps != null) rows.push(['Passos médios/dia', actSummary.avg_daily_steps.toLocaleString()]);
+            if (actSummary.days_tracked != null) rows.push(['Dias rastreados', actSummary.days_tracked]);
+            actEl.innerHTML = rows.length ? rows.map(([k, v]) => '<div class="metric-row"><span class="metric-key">' + k + '</span><span class="metric-value">' + v + '</span></div>').join('') : '<p class="empty-state">Sem dados</p>';
+        }
+
+        // Charts
+        const history = bc.history || [];
+        if (history.length > 0) {
+            renderWzWeightChart(history);
+        }
+        const sleepHistory = slp.history || [];
+        if (sleepHistory.length > 0) {
+            renderWzSleepChart(sleepHistory);
+        }
+        const activityHistory = act.history || [];
+        if (activityHistory.length > 0) {
+            renderWzStepsChart(activityHistory);
+        }
+    }
+
+    function renderWzWeightChart(history) {
+        const ctx = document.getElementById('wzWeightChart');
+        if (!ctx) return;
+        if (wzWeightChart) wzWeightChart.destroy();
+        const labels = history.map(h => h.date);
+        const weights = history.map(h => h.weight_kg);
+        wzWeightChart = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Peso (kg)',
+                    data: weights,
+                    borderColor: '#14b8a6',
+                    backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 2,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#9ca3af' } } },
+                scales: {
+                    x: { ticks: { color: '#9ca3af', maxTicksLimit: 10 }, grid: { color: '#2d3a4d' } },
+                    y: { ticks: { color: '#9ca3af' }, grid: { color: '#2d3a4d' } },
+                },
+            },
+        });
+    }
+
+    function renderWzSleepChart(history) {
+        const ctx = document.getElementById('wzSleepChart');
+        if (!ctx) return;
+        if (wzSleepChart) wzSleepChart.destroy();
+        const labels = history.map(h => h.date);
+        const light = history.map(h => h.light_h);
+        const deep = history.map(h => h.deep_h);
+        const rem = history.map(h => h.rem_h);
+        wzSleepChart = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Leve', data: light, backgroundColor: 'rgba(94, 234, 212, 0.6)' },
+                    { label: 'Profundo', data: deep, backgroundColor: 'rgba(20, 184, 166, 0.8)' },
+                    { label: 'REM', data: rem, backgroundColor: 'rgba(6, 182, 212, 0.6)' },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#9ca3af' } } },
+                scales: {
+                    x: { stacked: true, ticks: { color: '#9ca3af', maxTicksLimit: 10 }, grid: { color: '#2d3a4d' } },
+                    y: { stacked: true, ticks: { color: '#9ca3af' }, grid: { color: '#2d3a4d' } },
+                },
+            },
+        });
+    }
+
+    function renderWzStepsChart(history) {
+        const ctx = document.getElementById('wzStepsChart');
+        if (!ctx) return;
+        if (wzStepsChart) wzStepsChart.destroy();
+        const labels = history.map(h => h.date);
+        const steps = history.map(h => h.steps);
+        wzStepsChart = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Passos',
+                    data: steps,
+                    backgroundColor: 'rgba(20, 184, 166, 0.6)',
+                    borderColor: '#14b8a6',
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#9ca3af' } } },
+                scales: {
+                    x: { ticks: { color: '#9ca3af', maxTicksLimit: 10 }, grid: { color: '#2d3a4d' } },
+                    y: { ticks: { color: '#9ca3af' }, grid: { color: '#2d3a4d' } },
+                },
+            },
+        });
     }
 
     function renderWeightChart(history, bodyFatHistory) {

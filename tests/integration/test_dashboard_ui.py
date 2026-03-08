@@ -154,3 +154,17 @@ class TestDashboardUI:
         assert response.status_code == 200
         html = response.data.decode("utf-8")
         assert "storage.js" in html
+
+    def test_withings_zip_dropzone_and_card_exist(self) -> None:
+        """Upload has optional Withings ZIP dropzone; dashboard has withings zip card."""
+        client = app.test_client()
+        response = client.get("/")
+        assert response.status_code == 200
+        html = response.data.decode("utf-8")
+        assert 'id="dropzoneWithingsZip"' in html or "id='dropzoneWithingsZip'" in html
+        assert 'id="fileInputWithingsZip"' in html or "id='fileInputWithingsZip'" in html
+        assert "ZIP Withings" in html
+        assert "opcional" in html
+        assert 'id="withingsZipCard"' in html or "id='withingsZipCard'" in html
+        assert 'id="wzBodyContent"' in html
+        assert 'id="wzWeightChart"' in html

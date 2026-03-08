@@ -62,15 +62,27 @@ body {
 
 .dropzones-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
     margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+    .dropzones-row {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 600px) {
     .dropzones-row {
         grid-template-columns: 1fr;
     }
+}
+
+.optional-badge {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    font-weight: 400;
 }
 
 .dropzone-single {
@@ -647,12 +659,19 @@ body {
     gap: 1rem;
 }
 
-.pdf-v2-block h3 {
+.pdf-v2-block h3,
+.withings-zip-block h3 {
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--accent);
     margin-bottom: 0.6rem;
     letter-spacing: 0.02em;
+}
+
+.withings-zip-blocks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
 }
 
 /* Loading */

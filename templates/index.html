@@ -26,6 +26,11 @@
                     <span class="dropzone-filename" id="pdfFilename">Arraste ou clique</span>
                     <input type="file" id="fileInputPdf" accept=".pdf" hidden>
                 </label>
+                <label class="dropzone-single" id="dropzoneWithingsZip" data-type="withings_zip">
+                    <span class="dropzone-label">ZIP Withings <span class="optional-badge">(opcional)</span></span>
+                    <span class="dropzone-filename" id="withingsZipFilename">Arraste ou clique</span>
+                    <input type="file" id="fileInputWithingsZip" accept=".zip" hidden>
+                </label>
             </div>
             <div class="upload-options">
                 <div class="upload-form-grid">
@@ -300,6 +305,45 @@
                     <h2>Sono</h2>
                     <div class="metrics-panel" id="sleepContent">
                         <p class="empty-state">Sem dados de sono</p>
+                    </div>
+                </div>
+
+                <div class="card withings-zip-card hidden" id="withingsZipCard">
+                    <h2>Withings — Histórico Diário</h2>
+                    <div class="withings-zip-blocks">
+                        <div class="withings-zip-block">
+                            <h3>Composição Corporal</h3>
+                            <div class="metrics-panel" id="wzBodyContent">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="wzWeightChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="withings-zip-block">
+                            <h3>Saúde Cardiovascular</h3>
+                            <div class="metrics-panel" id="wzCardioContent">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                        </div>
+                        <div class="withings-zip-block">
+                            <h3>Sono</h3>
+                            <div class="metrics-panel" id="wzSleepContent">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="wzSleepChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="withings-zip-block">
+                            <h3>Atividade</h3>
+                            <div class="metrics-panel" id="wzActivityContent">
+                                <p class="empty-state">Sem dados</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="wzStepsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

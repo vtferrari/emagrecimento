@@ -4,8 +4,10 @@ from emagrecimento.application.use_cases.build_report import BuildReportUseCase
 from emagrecimento.application.use_cases.extract_pdf import ExtractPdfMetricsUseCase
 from emagrecimento.application.use_cases.extract_user_info import ExtractUserInfoFromFiles
 from emagrecimento.application.use_cases.extract_zip import ExtractZipDataUseCase
+from emagrecimento.application.use_cases.get_withings_zip import GetWithingsZipDataUseCase
 from emagrecimento.infrastructure.pdf_metrics_parser import WithingsPdfMetricsParser
 from emagrecimento.infrastructure.pdf_reader import PypdfPdfReader
+from emagrecimento.infrastructure.withings_zip_adapter import WithingsZipAdapter
 from emagrecimento.infrastructure.zip_reader import ZipFileZipReader
 
 
@@ -30,3 +32,8 @@ def create_build_report_use_case() -> BuildReportUseCase:
 def create_extract_user_info_use_case() -> ExtractUserInfoFromFiles:
     """Factory for ExtractUserInfoFromFiles."""
     return ExtractUserInfoFromFiles()
+
+
+def create_get_withings_zip_use_case() -> GetWithingsZipDataUseCase:
+    """Factory for GetWithingsZipDataUseCase."""
+    return GetWithingsZipDataUseCase(repository=WithingsZipAdapter())

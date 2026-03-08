@@ -9,6 +9,24 @@ from pypdf import PdfWriter
 from app import app
 
 
+def _create_minimal_withings_zip() -> bytes:
+    """Create minimal valid Withings export ZIP."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        measures = (
+            "Date,Time,Value,Unit,Recorded by,Measure type\n"
+            "2026-01-20,08:00,95.4,kg,Scale,Weight\n"
+            "2026-01-20,08:00,23.5,kg,Scale,Fat Mass Weight\n"
+            "2026-01-20,08:00,68.4,kg,Scale,Muscle Mass\n"
+            "2026-01-20,08:00,3.5,,Scale,Visceral Fat\n"
+            "2026-01-20,08:00,38,years,Scale,Metabolic Age\n"
+        )
+        zf.writestr("Measures | [2026-01-01] - [2026-01-31].csv", measures)
+        steps = "Date,Measure type,Value\n2026-01-20,Steps,15000\n"
+        zf.writestr("Steps | [2026-01-01] - [2026-01-31].csv", steps)
+    return buf.getvalue()
+
+
 def _create_minimal_zip() -> bytes:
     """Create minimal valid ZIP with required CSVs."""
     buffer = io.BytesIO()
@@ -206,3 +224,51 @@ class TestApiProcess:
         assert targets is not None
         assert targets.get("fat_g") == 65
         assert targets.get("carbs_g") == 150
+
+    def test_api_process_accepts_optional_withings_zip(self) -> None:
+        """API accepts optional withings_zip_file and returns withings_zip in report."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+        withings_zip_bytes = _create_minimal_withings_zip()
+
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "withings_zip_file": (io.BytesIO(withings_zip_bytes), "withings_export.zip"),
+                "target_date": "2026-06-01",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        report = data["report"]
+        assert "withings_zip" in report
+        wz = report["withings_zip"]
+        assert wz is not None
+        assert "body_composition" in wz
+        assert "activity" in wz
+        assert len(wz["body_composition"].get("history", [])) >= 1
+        assert wz["activity"]["summary"]["avg_daily_steps"] == 15000
+
+    def test_api_process_works_without_withings_zip(self) -> None:
+        """API works when withings_zip_file is not sent; withings_zip is None."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "target_date": "2026-06-01",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        report = data["report"]
+        assert report.get("withings_zip") is None
