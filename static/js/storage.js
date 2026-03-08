@@ -41,6 +41,7 @@
                     zipFilename: data.zipFilename || null,
                     pdfFilename: data.pdfFilename || null,
                     withingsZipFilename: data.withingsZipFilename || null,
+                    agentDiary: data.agentDiary || null,
                     savedAt: new Date().toISOString(),
                 };
                 if (data.zipFile instanceof Blob) {
@@ -98,6 +99,7 @@
                         pdfFilename: row.pdfFilename || null,
                         withingsZipFile,
                         withingsZipFilename: row.withingsZipFilename || null,
+                        agentDiary: row.agentDiary || null,
                         savedAt: row.savedAt,
                     });
                 };

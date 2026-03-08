@@ -64,6 +64,11 @@
                 withingsZipFilename.textContent = session.withingsZipFilename || session.withingsZipFile.name;
                 dropzoneWithingsZip.classList.add('has-file');
             }
+            // Restore diary
+            if (session.agentDiary && diaryTextarea) {
+                diaryTextarea.value = session.agentDiary;
+                if (diaryCharCount) diaryCharCount.textContent = session.agentDiary.length;
+            }
             // Restore dashboard if we have report
             if (session.report && session.report.report) {
                 lastReportData = session.report;
@@ -84,6 +89,15 @@
             targetDateEl.value = d.toISOString().slice(0, 10);
         }
     })();
+
+    // Diary character counter
+    const diaryTextarea = document.getElementById('agentDiary');
+    const diaryCharCount = document.getElementById('diaryCharCount');
+    if (diaryTextarea && diaryCharCount) {
+        diaryTextarea.addEventListener('input', () => {
+            diaryCharCount.textContent = diaryTextarea.value.length;
+        });
+    }
 
     // Prevent browser from opening files when dropped outside dropzone
     document.addEventListener('dragover', (e) => {
@@ -310,6 +324,8 @@
         if (carbsGEl) carbsGEl.value = '';
         const fiberGEl = document.getElementById('fiberG');
         if (fiberGEl) fiberGEl.value = '';
+        if (diaryTextarea) diaryTextarea.value = '';
+        if (diaryCharCount) diaryCharCount.textContent = '0';
     });
 
     const btnClearStorage = document.getElementById('btnClearStorage');
@@ -418,6 +434,8 @@
         if (userParams.fat_g != null) formData.append('fat_g', userParams.fat_g);
         if (userParams.carbs_g != null) formData.append('carbs_g', userParams.carbs_g);
         if (userParams.fiber_g != null) formData.append('fiber_g', userParams.fiber_g);
+        const diary = document.getElementById('agentDiary')?.value?.trim() || '';
+        if (diary) formData.append('agent_diary', diary);
 
         try {
             const res = await fetch('/api/process', {
@@ -447,6 +465,7 @@
                     zipFilename: zipFile.name,
                     pdfFile: pdfFile,
                     pdfFilename: pdfFile.name,
+                    agentDiary: diary || null,
                 };
                 if (withingsZipFile) {
                     saveData.withingsZipFile = withingsZipFile;
@@ -916,6 +935,18 @@
                 ).join('');
             } else {
                 sleepContainer.innerHTML = '<p class="empty-state">Sem dados de sono</p>';
+            }
+        }
+
+        // Diary card (show user notes when available)
+        const diaryCard = document.getElementById('diaryCard');
+        if (diaryCard) {
+            const currentDiary = diaryTextarea ? diaryTextarea.value.trim() : '';
+            if (currentDiary) {
+                document.getElementById('diaryCardContent').textContent = currentDiary;
+                diaryCard.classList.remove('hidden');
+            } else {
+                diaryCard.classList.add('hidden');
             }
         }
 

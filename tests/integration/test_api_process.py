@@ -272,3 +272,70 @@ class TestApiProcess:
         data = response.get_json()
         report = data["report"]
         assert report.get("withings_zip") is None
+
+    def test_agent_diary_included_in_context(self) -> None:
+        """API appends agent_diary to agent.context when sent."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        diary_text = "Dias 27-30 de janeiro viajei à Irlanda e saí da dieta."
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "target_date": "2026-06-01",
+                "agent_diary": diary_text,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "diary" not in data["agent"]
+        assert diary_text in data["agent"]["context"]
+        assert "Notas do usuário" in data["agent"]["context"]
+
+    def test_agent_diary_empty_not_in_context(self) -> None:
+        """API does not add notes section when agent_diary is empty."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "target_date": "2026-06-01",
+                "agent_diary": "",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "diary" not in data["agent"]
+        assert "Notas do usuário" not in data["agent"]["context"]
+
+    def test_agent_diary_truncated_at_2000_in_context(self) -> None:
+        """API truncates agent_diary to 2000 characters in context."""
+        client = app.test_client()
+        zip_bytes = _create_minimal_zip()
+        pdf_bytes = _create_minimal_pdf()
+
+        long_diary = "X" * 2500
+        response = client.post(
+            "/api/process",
+            data={
+                "zip_file": (io.BytesIO(zip_bytes), "export.zip"),
+                "pdf_file": (io.BytesIO(pdf_bytes), "report.pdf"),
+                "target_date": "2026-06-01",
+                "agent_diary": long_diary,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        context = data["agent"]["context"]
+        assert "X" * 2000 in context
+        assert "X" * 2001 not in context

@@ -63,7 +63,58 @@ class TestWrapReportForChatgpt:
         assert "context" in result["agent"]
         assert result["report"] == summary
 
+    def test_agent_diary_is_included_in_context(self) -> None:
+        """When agent_diary is provided, it appears in context with delimiters."""
+        summary = {"user": {"name": "Test"}, "target_date": "2026-06-01"}
+        diary = "Dias 27-30 viajei à Irlanda e saí da dieta."
+        result = build_agent_context(summary, agent_diary=diary)
+        assert diary in result
+        assert "Notas do usuário" in result
+        assert "Fim das notas" in result
+
+    def test_agent_diary_empty_does_not_add_notes_section(self) -> None:
+        """When agent_diary is empty, notes section is not added."""
+        result = build_agent_context({}, agent_diary="")
+        assert "Notas do usuário" not in result
+
+    def test_agent_diary_none_does_not_add_notes_section(self) -> None:
+        """When agent_diary is None, notes section is not added."""
+        result = build_agent_context({}, agent_diary=None)
+        assert "Notas do usuário" not in result
+
+    def test_agent_diary_truncated_to_2000_chars(self) -> None:
+        """Diary text longer than 2000 chars is truncated."""
+        diary = "A" * 2500
+        result = build_agent_context({}, agent_diary=diary)
+        assert "A" * 2000 in result
+        assert "A" * 2001 not in result
+
     def test_prompt_is_non_empty(self) -> None:
         """CHATGPT_PROMPT constant is non-empty."""
         assert len(CHATGPT_PROMPT) > 50
         assert "nutricionista" in CHATGPT_PROMPT
+
+
+class TestWrapReportDiary:
+    """Tests for diary in wrap_report_for_chatgpt context."""
+
+    def test_diary_appended_to_context(self) -> None:
+        """wrap_report_for_chatgpt appends diary to agent.context."""
+        summary = {"weight": {}, "nutrition": {}}
+        result = wrap_report_for_chatgpt(summary, agent_diary="Viajei na semana 3.")
+        assert "Viajei na semana 3." in result["agent"]["context"]
+        assert "Notas do usuário" in result["agent"]["context"]
+        assert "diary" not in result["agent"]
+
+    def test_empty_diary_not_in_context(self) -> None:
+        """wrap_report_for_chatgpt does not add notes section when diary is empty."""
+        summary = {"weight": {}, "nutrition": {}}
+        result = wrap_report_for_chatgpt(summary, agent_diary="")
+        assert "Notas do usuário" not in result["agent"]["context"]
+        assert "diary" not in result["agent"]
+
+    def test_no_diary_field_in_agent(self) -> None:
+        """wrap_report_for_chatgpt never includes a diary key in agent."""
+        summary = {"weight": {}, "nutrition": {}}
+        result = wrap_report_for_chatgpt(summary)
+        assert "diary" not in result["agent"]

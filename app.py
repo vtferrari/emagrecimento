@@ -158,7 +158,8 @@ def process_files():
         summary["target_date"] = target_date
         summary["suggested_export_filename"] = build_export_filename(name)
 
-        output = wrap_report_for_chatgpt(summary)
+        agent_diary = request.form.get("agent_diary", "").strip()[:2000]
+        output = wrap_report_for_chatgpt(summary, agent_diary=agent_diary)
         return jsonify(output)
     except FileNotFoundError as e:
         return jsonify({"error": str(e)}), 400

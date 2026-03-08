@@ -74,6 +74,21 @@
                         </div>
                     </div>
                 </div>
+                <div class="diary-section">
+                    <label class="diary-label" for="agentDiary">
+                        Notas para o agente
+                        <span class="diary-hint">(opcional — eventos, viagens, contexto que os dados não mostram)</span>
+                    </label>
+                    <textarea
+                        id="agentDiary"
+                        name="agent_diary"
+                        class="diary-textarea"
+                        rows="4"
+                        maxlength="2000"
+                        placeholder="Ex: Dias 27–30 de janeiro viajei para a Irlanda e saí da dieta. Semana do dia 10 tive gripe e não treinei..."
+                    ></textarea>
+                    <span class="diary-char-count"><span id="diaryCharCount">0</span>/2000</span>
+                </div>
                 <button type="button" class="btn-calculate" id="btnCalculate">Calcular</button>
             </div>
         </section>
@@ -306,6 +321,11 @@
                 </div>
 
                 <div class="section-label">Análise</div>
+
+                <div class="card diary-card hidden" id="diaryCard">
+                    <h2>Notas do período</h2>
+                    <p id="diaryCardContent" class="diary-card-text"></p>
+                </div>
 
                 <div class="card alerts-card" id="alertsCard">
                     <h2>Insights e Alertas</h2>

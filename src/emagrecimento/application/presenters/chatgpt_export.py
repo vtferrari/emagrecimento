@@ -8,7 +8,7 @@ CHATGPT_PROMPT = (
 )
 
 
-def build_agent_context(summary: dict) -> str:
+def build_agent_context(summary: dict, *, agent_diary: str | None = None) -> str:
     """Build dynamic context string from report summary for ChatGPT."""
     user = summary.get("user") or {}
     target_date = summary.get("target_date") or ""
@@ -112,15 +112,23 @@ def build_agent_context(summary: dict) -> str:
         if len(lines) > 1:
             parts.append("\n" + "\n".join(lines))
 
+    diary = (agent_diary or "").strip()[:2000]
+    if diary:
+        parts.append("\n\n--- Notas do usuário (contexto adicional) ---\n")
+        parts.append(diary)
+        parts.append("\n--- Fim das notas ---\n")
+
     return "".join(parts).strip()
 
 
-def wrap_report_for_chatgpt(summary: dict) -> dict:
+def wrap_report_for_chatgpt(
+    summary: dict, *, agent_diary: str | None = None
+) -> dict:
     """Wrap report summary with agent prompt and context for ChatGPT."""
     return {
         "agent": {
             "prompt": CHATGPT_PROMPT,
-            "context": build_agent_context(summary),
+            "context": build_agent_context(summary, agent_diary=agent_diary),
         },
         "report": summary,
     }

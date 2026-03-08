@@ -793,3 +793,56 @@ body {
 .error.hidden {
     display: none;
 }
+
+/* Diary / Agent Notes */
+.diary-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+}
+
+.diary-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.diary-hint {
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: 6px;
+}
+
+.diary-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 90px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    line-height: 1.5;
+}
+
+.diary-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.diary-char-count {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.diary-card-text {
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
