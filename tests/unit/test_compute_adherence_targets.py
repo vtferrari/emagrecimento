@@ -93,7 +93,7 @@ class TestComputeAdherenceTargets:
         assert result["carbs_g"] == 150
 
     def test_override_takes_precedence_over_computed(self) -> None:
-        """When override is provided, no BMR/protein computation is done."""
+        """Override fields take precedence over personalized computation."""
         result = compute_adherence_targets(
             90.0,
             height_cm=180,
@@ -103,6 +103,37 @@ class TestComputeAdherenceTargets:
         )
         assert result["protein_g"] == 150
         assert result["calorie_range"] == [1800, 2000]
+
+    def test_partial_override_preserves_personalized_protein(self) -> None:
+        """Partial override (calorie_min only) still personalizes protein from weight."""
+        result = compute_adherence_targets(
+            90.0,
+            height_cm=180,
+            sex="M",
+            age=35,
+            override={"calorie_min": 1600},
+        )
+        # protein personalizes from weight: 90 * 1.8 = 162
+        assert result["protein_g"] == 162
+        # calorie_min is overridden
+        assert result["calorie_range"][0] == 1600
+        # calorie_max is from BMR, not default 1950
+        assert result["calorie_range"][1] > 1950
+
+    def test_partial_override_preserves_personalized_calories(self) -> None:
+        """Partial override (protein only) still personalizes calories from BMR."""
+        result = compute_adherence_targets(
+            90.0,
+            height_cm=180,
+            sex="M",
+            age=35,
+            override={"protein_g": 150},
+        )
+        # calories are personalized, not default [1800, 1950]
+        assert result["calorie_range"] != ADHERENCE_TARGETS["calorie_range"]
+        assert result["calorie_range"][0] > 1800
+        # protein is overridden
+        assert result["protein_g"] == 150
 
     def test_fiber_scales_with_calories_when_no_override(self) -> None:
         """Fiber = max(20, 14 * cal_mid/1000) when calories are computed."""

@@ -35,29 +35,10 @@ def compute_adherence_targets(
     """
     Compute personalized adherence targets from weight, height, sex, age.
     Uses Mifflin-St Jeor for BMR, 1.8 g/kg protein (cutting), 14g fiber/1000 kcal.
-    override: optional dict with calorie_min, calorie_max, protein_g, fat_g, carbs_g, fiber_g to override.
+    override: optional dict with calorie_min, calorie_max, protein_g, fat_g, carbs_g, fiber_g
+    to override specific fields; non-overridden fields remain personalized.
     """
     targets: dict[str, Any] = dict(ADHERENCE_TARGETS)
-    if override:
-        if "calorie_min" in override and override["calorie_min"] is not None:
-            targets["calorie_range"] = [
-                int(override["calorie_min"]),
-                targets["calorie_range"][1],
-            ]
-        if "calorie_max" in override and override["calorie_max"] is not None:
-            targets["calorie_range"] = [
-                targets["calorie_range"][0],
-                int(override["calorie_max"]),
-            ]
-        if "protein_g" in override and override["protein_g"] is not None:
-            targets["protein_g"] = int(override["protein_g"])
-        if "fat_g" in override and override["fat_g"] is not None:
-            targets["fat_g"] = int(override["fat_g"])
-        if "carbs_g" in override and override["carbs_g"] is not None:
-            targets["carbs_g"] = int(override["carbs_g"])
-        if "fiber_g" in override and override["fiber_g"] is not None:
-            targets["fiber_g"] = int(override["fiber_g"])
-        return targets
 
     # Protein: 1.8 g/kg body weight (scientific consensus for cutting - preserve lean mass)
     protein_g = max(80, min(200, round(weight_kg * 1.8, 0)))
@@ -81,5 +62,26 @@ def compute_adherence_targets(
     cal_mid = (targets["calorie_range"][0] + targets["calorie_range"][1]) / 2
     fiber_g = max(20, round(14 * cal_mid / 1000, 0))
     targets["fiber_g"] = int(fiber_g)
+
+    # Apply overrides on top of personalized targets (override takes precedence per field)
+    if override:
+        if "calorie_min" in override and override["calorie_min"] is not None:
+            targets["calorie_range"] = [
+                int(override["calorie_min"]),
+                targets["calorie_range"][1],
+            ]
+        if "calorie_max" in override and override["calorie_max"] is not None:
+            targets["calorie_range"] = [
+                targets["calorie_range"][0],
+                int(override["calorie_max"]),
+            ]
+        if "protein_g" in override and override["protein_g"] is not None:
+            targets["protein_g"] = int(override["protein_g"])
+        if "fat_g" in override and override["fat_g"] is not None:
+            targets["fat_g"] = int(override["fat_g"])
+        if "carbs_g" in override and override["carbs_g"] is not None:
+            targets["carbs_g"] = int(override["carbs_g"])
+        if "fiber_g" in override and override["fiber_g"] is not None:
+            targets["fiber_g"] = int(override["fiber_g"])
 
     return targets
