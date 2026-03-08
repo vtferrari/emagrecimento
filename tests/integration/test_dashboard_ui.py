@@ -165,6 +165,9 @@ class TestDashboardUI:
         assert 'id="fileInputWithingsZip"' in html or "id='fileInputWithingsZip'" in html
         assert "ZIP Withings" in html
         assert "opcional" in html
-        assert 'id="withingsZipCard"' in html or "id='withingsZipCard'" in html
+        assert 'id="wzBodyCard"' in html
+        assert 'id="wzCardioCard"' in html
+        assert 'id="wzSleepCard"' in html
+        assert 'id="wzActivityCard"' in html
         assert 'id="wzBodyContent"' in html
         assert 'id="wzWeightChart"' in html

@@ -170,6 +170,13 @@ class WithingsZipAdapter(WithingsZipRepository):
             )
         return snapshots
 
+    def _find_column(self, cols: dict[str, str], candidates: list[str]) -> str | None:
+        """Return actual column name from cols dict, trying candidates in order."""
+        for c in candidates:
+            if c in cols:
+                return cols[c]
+        return None
+
     def _parse_sleep(self, zf: zipfile.ZipFile, name: str) -> list[WithingsSleepNight]:
         df = self._read_csv(zf, name)
         cols = {c.strip(): c for c in df.columns}
@@ -178,9 +185,9 @@ class WithingsZipAdapter(WithingsZipRepository):
         deep_col = cols.get("Deep duration") or "Deep duration"
         rem_col = cols.get("REM duration") or "REM duration"
         awake_col = cols.get("Awake duration") or "Awake duration"
-        min_hr = cols.get("Min HR") or "Min HR"
-        max_hr = cols.get("Max HR") or "Max HR"
-        avg_hr = cols.get("HR average") or "HR average"
+        min_hr = self._find_column(cols, ["Min HR", "Heart rate (min)", "HR min"]) or "Min HR"
+        max_hr = self._find_column(cols, ["Max HR", "Heart rate (max)", "HR max"]) or "Max HR"
+        avg_hr = self._find_column(cols, ["HR average", "Average heart rate", "Heart rate average", "HR Average"]) or "HR average"
 
         if date_col not in df.columns:
             return []

@@ -156,6 +156,38 @@ class TestWithingsZipAdapter:
         # Should not crash; missing values handled
         assert len(result.sleep_nights) == 1
 
+    def test_sleep_hr_average_reads_correct_column_not_min_hr(self) -> None:
+        """HR average column must be used for hr_avg, not Min HR. avg_hr_mean should be ~62.5."""
+        sleep = (
+            "Date,End date,Start Date,Time to sleep,Time to wake,Light duration,Deep duration,REM duration,Awake duration,Nb awake,Min HR,Max HR,HR average\n"
+            "2026-01-19,2026-01-20,2026-01-19,300,25200,14760,3960,9000,2520,2,42,102,60\n"
+            "2026-01-20,2026-01-21,2026-01-20,300,25200,14760,3960,9000,2520,2,43,98,65\n"
+        )
+        zip_bytes = make_fake_zip(sleep_csv=sleep)
+        adapter = WithingsZipAdapter()
+        result = adapter.load(zip_bytes)
+        assert result is not None
+        assert len(result.sleep_nights) == 2
+        # hr_avg must come from HR average (60, 65), not Min HR (42, 43)
+        assert result.sleep_nights[0].hr_avg == 60
+        assert result.sleep_nights[1].hr_avg == 65
+        assert result.sleep_nights[0].hr_min == 42
+        assert result.sleep_nights[1].hr_min == 43
+
+    def test_sleep_parses_alternative_hr_average_column_name(self) -> None:
+        """Withings export may use 'Average heart rate' instead of 'HR average'."""
+        sleep = (
+            "Date,Light duration,Deep duration,REM duration,Awake duration,Min HR,Max HR,Average heart rate\n"
+            "2026-01-19,14760,3960,9000,2520,42,102,62\n"
+        )
+        zip_bytes = make_fake_zip(sleep_csv=sleep)
+        adapter = WithingsZipAdapter()
+        result = adapter.load(zip_bytes)
+        assert result is not None
+        assert len(result.sleep_nights) == 1
+        assert result.sleep_nights[0].hr_avg == 62
+        assert result.sleep_nights[0].hr_min == 42
+
     def test_returns_json_safe_types(self) -> None:
         """All values must be Python native (no numpy.int64, datetime, NaN)."""
         measures = "Date,Time,Value,Unit,Recorded by,Measure type\n2026-01-20,08:00,95.4,kg,Scale,Weight\n"

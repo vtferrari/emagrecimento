@@ -99,6 +99,12 @@ def withings_health_record_to_dict(record: WithingsHealthRecord) -> dict[str, An
     nights = record.sleep_nights
     sleep_summary: dict[str, Any] = {}
     if nights:
+        nights_with_hr = [n for n in nights if n.hr_avg > 0]
+        avg_hr_mean_val = (
+            round(sum(n.hr_avg for n in nights_with_hr) / len(nights_with_hr), 1)
+            if nights_with_hr
+            else None
+        )
         sleep_summary = {
             "total_nights": len(nights),
             "avg_total_h": record.avg_sleep_h,
@@ -108,7 +114,7 @@ def withings_health_record_to_dict(record: WithingsHealthRecord) -> dict[str, An
             "avg_awake_h": round(sum(n.awake_h for n in nights) / len(nights), 1),
             "avg_hr_min": round(sum(n.hr_min for n in nights) / len(nights), 1),
             "avg_hr_max": round(sum(n.hr_max for n in nights) / len(nights), 1),
-            "avg_hr_mean": round(sum(n.hr_avg for n in nights) / len(nights), 1),
+            "avg_hr_mean": avg_hr_mean_val,
         }
     sleep_history = [
         {

@@ -326,6 +326,27 @@ body {
     color: var(--text-secondary);
 }
 
+.file-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.file-badge--ok {
+    background: rgba(0, 200, 150, 0.15);
+    color: #00c896;
+    border: 1px solid #00c896;
+}
+
+.file-badge--missing {
+    background: rgba(150, 150, 150, 0.1);
+    color: #888;
+    border: 1px solid #555;
+}
+
 .btn-new-upload {
     padding: 0.5rem 1rem;
     background: var(--accent);
@@ -401,6 +422,18 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
+}
+
+.section-label {
+    grid-column: 1 / -1;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 .card {
@@ -542,6 +575,20 @@ body {
     text-align: right;
 }
 
+.metrics-panel .delta-badge {
+    font-size: 0.85em;
+    margin-left: 6px;
+    font-weight: 600;
+}
+
+.metrics-panel .delta-badge--positive {
+    color: #00c896;
+}
+
+.metrics-panel .delta-badge--negative {
+    color: #ff6b6b;
+}
+
 .projection-note {
     font-size: 0.8rem;
     color: var(--text-secondary);
@@ -581,6 +628,32 @@ body {
 
 .adherence-block:last-child {
     border-bottom: none;
+}
+
+.adherence-week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.adherence-week {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.adherence-week:last-child {
+    border-bottom: none;
+}
+
+.adherence-week-body {
+    padding-top: 0.5rem;
+}
+
+.adherence-week-body.collapsed {
+    display: none;
 }
 
 .adherence-header {
@@ -668,10 +741,9 @@ body {
     letter-spacing: 0.02em;
 }
 
-.withings-zip-blocks {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+/* Withings ZIP individual cards */
+.wz-card.hidden {
+    display: none;
 }
 
 /* Loading */

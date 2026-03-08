@@ -67,13 +67,7 @@
             // Restore dashboard if we have report
             if (session.report && session.report.report) {
                 lastReportData = session.report;
-                const zipName = session.zipFilename || (session.zipFile && session.zipFile.name);
-                const pdfName = session.pdfFilename || (session.pdfFile && session.pdfFile.name);
-                const wzName = session.withingsZipFilename || (session.withingsZipFile && session.withingsZipFile.name);
-                const statusParts = [zipName, pdfName];
-                if (wzName) statusParts.push(wzName);
-                document.getElementById('fileStatus').textContent =
-                    (zipName && pdfName) ? 'Processado: ' + statusParts.join(' + ') : 'Dados restaurados';
+                renderFileStatus(session.report.report);
                 renderDashboard(session.report.report);
                 uploadSection.classList.add('hidden');
                 dashboard.classList.remove('hidden');
@@ -437,10 +431,7 @@
                 throw new Error(data.error || 'Erro ao processar arquivos');
             }
 
-            const statusParts = [zipFile.name, pdfFile.name];
-            if (withingsZipFile) statusParts.push(withingsZipFile.name);
-            document.getElementById('fileStatus').textContent =
-                'Processado: ' + statusParts.join(' + ');
+            renderFileStatus(data.report);
 
             lastReportData = data;
             renderDashboard(data.report);
@@ -468,6 +459,51 @@
         } finally {
             loading.classList.add('hidden');
         }
+    }
+
+    function toggleAdherenceWeek(header) {
+        const body = header.nextElementSibling;
+        body.classList.toggle('collapsed');
+        header.querySelector('.week-toggle').textContent =
+            body.classList.contains('collapsed') ? '▼' : '▲';
+    }
+    window.toggleAdherenceWeek = toggleAdherenceWeek;
+
+    function getSummaryInsight(report) {
+        const wz = report.withings_zip;
+        const bc = wz?.body_composition;
+        const delta = bc?.delta;
+        if (delta?.fat_mass_kg != null) {
+            const d = delta.fat_mass_kg;
+            return (d > 0 ? '+' : '') + d.toFixed(1) + ' kg gordura';
+        }
+        const w = report.weight;
+        if (w?.total_loss_kg != null && w.total_loss_kg !== 0) {
+            const loss = w.total_loss_kg;
+            return (loss < 0 ? Math.abs(loss).toFixed(1) : '+' + loss.toFixed(1)) + ' kg perdidos';
+        }
+        const n = report.nutrition || {};
+        const daysTarget = n.days_1800_to_1950 ?? 0;
+        const daysLogged = n.days_logged ?? 0;
+        return daysLogged > 0 ? daysTarget + ' dias na meta' : '--';
+    }
+
+    function renderFileStatus(data) {
+        const report = data || {};
+        const badges = [
+            report.nutrition && Object.keys(report.nutrition).length > 0
+                ? '<span class="file-badge file-badge--ok">✓ MFP</span>'
+                : '<span class="file-badge file-badge--missing">— MFP</span>',
+            (report.pdf_report && Object.keys(report.pdf_report).length > 0) ||
+            (report.pdf_report_v2 && Object.keys(report.pdf_report_v2).length > 0)
+                ? '<span class="file-badge file-badge--ok">✓ PDF Withings</span>'
+                : '<span class="file-badge file-badge--missing">— PDF Withings</span>',
+            report.withings_zip && Object.keys(report.withings_zip).length > 0
+                ? '<span class="file-badge file-badge--ok">✓ ZIP Withings</span>'
+                : '<span class="file-badge file-badge--missing">— ZIP Withings</span>',
+        ];
+        const el = document.getElementById('fileStatus');
+        if (el) el.innerHTML = badges.join('');
     }
 
     function renderDashboard(data) {
@@ -499,7 +535,7 @@
         const n = data.nutrition || {};
         const daysTarget = n.days_1800_to_1950 ?? 0;
         const daysLogged = n.days_logged ?? 0;
-        const insightsText = daysLogged > 0 ? daysTarget + ' dias na meta' : '--';
+        const insightsText = getSummaryInsight(data);
         const insightsEl = document.getElementById('summaryInsights');
         insightsEl.textContent = insightsText;
         insightsEl.className = 'summary-card-value' + (daysTarget >= daysLogged * 0.5 && daysLogged > 0 ? ' alert-ok' : '');
@@ -775,13 +811,16 @@
             alertsContainer.innerHTML = '<p class="empty-state">Nenhum alerta</p>';
         }
 
-        // Weekly adherence
+        // Weekly adherence (accordion: last week expanded, others collapsed)
         const weeklyAdherence = data.weekly_adherence || [];
         const adherenceContainer = document.getElementById('weeklyAdherence');
         if (adherenceContainer) {
             if (weeklyAdherence.length > 0) {
-                adherenceContainer.innerHTML = weeklyAdherence.map(w => {
+                adherenceContainer.innerHTML = weeklyAdherence.map((w, idx) => {
                     const comp = w.components || {};
+                    const isLast = idx === weeklyAdherence.length - 1;
+                    const collapsedClass = isLast ? '' : ' collapsed';
+                    const toggleChar = isLast ? '▲' : '▼';
                     const rows = [
                         ['Score', w.score + ' <span class="rating-badge">' + (w.rating || '') + '</span>'],
                         ['Calorias', (comp.calories_score ?? '--') + '/30'],
@@ -790,9 +829,12 @@
                         ['Sódio', (comp.sodium_hydration_score ?? '--') + '/10'],
                         ['Treino', (comp.training_score ?? '--') + '/20'],
                     ];
-                    return '<div class="adherence-block"><div class="adherence-header">' + w.week_start + ' a ' + w.week_end + '</div>' +
-                        rows.map(([k, v]) => '<div class="metric-row"><span class="metric-key">' + k + '</span><span class="metric-value">' + v + '</span></div>').join('') +
-                        '</div>';
+                    const bodyHtml = rows.map(([k, v]) => '<div class="metric-row"><span class="metric-key">' + k + '</span><span class="metric-value">' + v + '</span></div>').join('');
+                    return '<div class="adherence-week"><div class="adherence-week-header" onclick="toggleAdherenceWeek(this)">' +
+                        '<span class="week-range">' + w.week_start + ' a ' + w.week_end + '</span>' +
+                        '<span class="week-score rating-badge">' + w.score + ' ' + (w.rating || '') + '</span>' +
+                        '<span class="week-toggle">' + toggleChar + '</span></div>' +
+                        '<div class="adherence-week-body' + collapsedClass + '">' + bodyHtml + '</div></div>';
                 }).join('');
             } else {
                 adherenceContainer.innerHTML = '<p class="empty-state">Nenhum dado de aderência</p>';
@@ -850,11 +892,22 @@
             }
         }
 
-        // Sleep
+        // Sleep (prefer Withings ZIP data when available, fallback to PDF)
         const sleep = data.sleep || {};
+        const wzSleep = data.withings_zip?.sleep?.summary;
         const sleepContainer = document.getElementById('sleepContent');
         if (sleepContainer) {
-            if (Object.keys(sleep).length > 0) {
+            if (wzSleep && Object.keys(wzSleep).length > 0) {
+                const rows = [];
+                if (wzSleep.total_nights != null) rows.push(['Noites registradas', wzSleep.total_nights]);
+                if (wzSleep.avg_total_h != null) rows.push(['Sono médio', wzSleep.avg_total_h.toFixed(1) + ' h']);
+                if (wzSleep.avg_deep_h != null) rows.push(['Sono profundo', wzSleep.avg_deep_h.toFixed(1) + ' h']);
+                if (wzSleep.avg_rem_h != null) rows.push(['REM', wzSleep.avg_rem_h.toFixed(1) + ' h']);
+                if (wzSleep.avg_hr_mean != null) rows.push(['FC noturna média', wzSleep.avg_hr_mean.toFixed(1) + ' bpm']);
+                sleepContainer.innerHTML = rows.length ? rows.map(([k, v]) =>
+                    '<div class="metric-row"><span class="metric-key">' + k + '</span><span class="metric-value">' + v + '</span></div>'
+                ).join('') : '<p class="empty-state">Sem dados de sono</p>';
+            } else if (Object.keys(sleep).length > 0) {
                 const rows = [];
                 if (sleep.avg_duration) rows.push(['Duração média', sleep.avg_duration]);
                 if (sleep.avg_efficiency_pct != null) rows.push(['Eficiência', sleep.avg_efficiency_pct + '%']);
@@ -872,28 +925,40 @@
         }
     }
 
-    function renderWithingsZip(wz) {
-        const card = document.getElementById('withingsZipCard');
-        if (!card) return;
-        card.classList.remove('hidden');
+    function deltaHtml(value, unit, lowerIsBetter) {
+        if (value == null) return '';
+        const positive = lowerIsBetter ? value < 0 : value > 0;
+        const cls = positive ? 'delta-badge delta-badge--positive' : 'delta-badge delta-badge--negative';
+        const arrow = value > 0 ? '▲' : '▼';
+        return '<span class="' + cls + '">' + arrow + ' ' + Math.abs(value).toFixed(1) + (unit || '') + '</span>';
+    }
 
-        const fmtDelta = (v) => (v == null ? '' : (v >= 0 ? '+' : '') + v);
-        const deltaClass = (v) => (v == null ? '' : v > 0 ? 'positive' : v < 0 ? 'negative' : '');
+    function renderWithingsZip(wz) {
+        const wzCards = ['wzBodyCard', 'wzCardioCard', 'wzSleepCard', 'wzActivityCard'];
+        wzCards.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        });
 
         // Body composition
         const bc = wz.body_composition || {};
         const latest = bc.latest || {};
-        const first = bc.first || {};
         const delta = bc.delta || {};
         const bodyEl = document.getElementById('wzBodyContent');
         if (bodyEl) {
             const rows = [];
             if (latest.weight_kg != null) {
                 const d = delta.weight_kg;
-                rows.push(['Peso atual', latest.weight_kg + ' kg' + (d != null ? ' <span class="stat-value ' + deltaClass(d) + '">(' + fmtDelta(d) + ' kg)</span>' : '')]);
+                rows.push(['Peso atual', latest.weight_kg + ' kg' + (d != null ? deltaHtml(d, ' kg', true) : '')]);
             }
-            if (latest.fat_mass_kg != null) rows.push(['Gordura', latest.fat_mass_kg + ' kg' + (latest.fat_mass_pct != null ? ' (' + latest.fat_mass_pct + '%)' : '')]);
-            if (latest.muscle_mass_kg != null) rows.push(['Músculo', latest.muscle_mass_kg + ' kg']);
+            if (latest.fat_mass_kg != null) {
+                const d = delta.fat_mass_kg;
+                rows.push(['Gordura', latest.fat_mass_kg + ' kg' + (latest.fat_mass_pct != null ? ' (' + latest.fat_mass_pct + '%)' : '') + (d != null ? deltaHtml(d, ' kg', true) : '')]);
+            }
+            if (latest.muscle_mass_kg != null) {
+                const d = delta.muscle_mass_kg;
+                rows.push(['Músculo', latest.muscle_mass_kg + ' kg' + (d != null ? deltaHtml(d, ' kg', false) : '')]);
+            }
             if (latest.visceral_fat != null) rows.push(['Gordura visceral', latest.visceral_fat]);
             if (latest.metabolic_age != null) rows.push(['Idade metabólica', latest.metabolic_age + ' anos']);
             if (latest.bmr_kcal != null) rows.push(['BMR', latest.bmr_kcal + ' kcal']);

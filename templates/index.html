@@ -111,6 +111,9 @@
             </div>
 
             <div class="cards-grid">
+
+                <div class="section-label">Composição Corporal</div>
+
                 <div class="card weight-card">
                     <h2>Peso</h2>
                     <div class="weight-stats">
@@ -155,6 +158,32 @@
                         <canvas id="weightChart"></canvas>
                     </div>
                 </div>
+
+                <div class="card wz-card hidden" id="wzBodyCard">
+                    <h2>Composição Corporal (Withings)</h2>
+                    <div class="metrics-panel" id="wzBodyContent">
+                        <p class="empty-state">Sem dados</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="wzWeightChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card projection-card" id="projectionCard">
+                    <h2>Projeção de Peso</h2>
+                    <div class="metrics-panel" id="projectionContent">
+                        <p class="empty-state">Dados insuficientes para projeção</p>
+                    </div>
+                </div>
+
+                <div class="card retention-card" id="retentionCard">
+                    <h2>Flag de Retenção</h2>
+                    <div class="metrics-panel" id="retentionFlagContent">
+                        <p class="empty-state">Dados insuficientes</p>
+                    </div>
+                </div>
+
+                <div class="section-label">Alimentação</div>
 
                 <div class="card nutrition-card">
                     <h2>Alimentação</h2>
@@ -203,6 +232,15 @@
                     </div>
                 </div>
 
+                <div class="card adherence-card" id="adherenceCard">
+                    <h2>Aderência Semanal</h2>
+                    <div class="metrics-panel" id="weeklyAdherence">
+                        <p class="empty-state">Nenhum dado de aderência</p>
+                    </div>
+                </div>
+
+                <div class="section-label">Atividade</div>
+
                 <div class="card exercise-card">
                     <h2>Exercícios</h2>
                     <div class="exercise-stats">
@@ -229,6 +267,60 @@
                     </div>
                 </div>
 
+                <div class="card wz-card hidden" id="wzActivityCard">
+                    <h2>Atividade (Withings)</h2>
+                    <div class="metrics-panel" id="wzActivityContent">
+                        <p class="empty-state">Sem dados</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="wzStepsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-label">Sono</div>
+
+                <div class="card sleep-card" id="sleepCard">
+                    <h2>Sono</h2>
+                    <div class="metrics-panel" id="sleepContent">
+                        <p class="empty-state">Sem dados de sono</p>
+                    </div>
+                </div>
+
+                <div class="card wz-card hidden" id="wzSleepCard">
+                    <h2>Sono (Withings)</h2>
+                    <div class="metrics-panel" id="wzSleepContent">
+                        <p class="empty-state">Sem dados</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="wzSleepChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-label">Cardiovascular</div>
+
+                <div class="card wz-card hidden" id="wzCardioCard">
+                    <h2>Saúde Cardiovascular</h2>
+                    <div class="metrics-panel" id="wzCardioContent">
+                        <p class="empty-state">Sem dados</p>
+                    </div>
+                </div>
+
+                <div class="section-label">Análise</div>
+
+                <div class="card alerts-card" id="alertsCard">
+                    <h2>Insights e Alertas</h2>
+                    <div class="alerts-panel" id="alertsList">
+                        <p class="empty-state">Nenhum alerta</p>
+                    </div>
+                </div>
+
+                <div class="card weekly-card" id="weeklyCard">
+                    <h2>Resumo Semanal</h2>
+                    <div class="metrics-panel" id="weeklySummary">
+                        <p class="empty-state">Nenhum dado semanal</p>
+                    </div>
+                </div>
+
                 <div class="card comparison-card" id="comparisonCard">
                     <h2>Comparação MFP vs Withings</h2>
                     <div class="comparison-metrics" id="comparisonMetrics">
@@ -237,7 +329,7 @@
                 </div>
 
                 <div class="card pdf-report-v2-card" id="pdfReportV2Card">
-                    <h2>Relatório Withings v2</h2>
+                    <h2>Relatório Withings (PDF)</h2>
                     <div class="pdf-v2-blocks">
                         <div class="pdf-v2-block">
                             <h3>Atividade</h3>
@@ -261,87 +353,6 @@
                             <h3>Cardio</h3>
                             <div class="metrics-panel" id="pdfV2Cardio">
                                 <p class="empty-state">Sem dados</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card weekly-card" id="weeklyCard">
-                    <h2>Resumo Semanal</h2>
-                    <div class="metrics-panel" id="weeklySummary">
-                        <p class="empty-state">Nenhum dado semanal</p>
-                    </div>
-                </div>
-
-                <div class="card alerts-card" id="alertsCard">
-                    <h2>Insights e Alertas</h2>
-                    <div class="alerts-panel" id="alertsList">
-                        <p class="empty-state">Nenhum alerta</p>
-                    </div>
-                </div>
-
-                <div class="card adherence-card" id="adherenceCard">
-                    <h2>Aderência Semanal</h2>
-                    <div class="metrics-panel" id="weeklyAdherence">
-                        <p class="empty-state">Nenhum dado de aderência</p>
-                    </div>
-                </div>
-
-                <div class="card projection-card" id="projectionCard">
-                    <h2>Projeção de Peso</h2>
-                    <div class="metrics-panel" id="projectionContent">
-                        <p class="empty-state">Dados insuficientes para projeção</p>
-                    </div>
-                </div>
-
-                <div class="card retention-card" id="retentionCard">
-                    <h2>Flag de Retenção</h2>
-                    <div class="metrics-panel" id="retentionFlagContent">
-                        <p class="empty-state">Dados insuficientes</p>
-                    </div>
-                </div>
-
-                <div class="card sleep-card" id="sleepCard">
-                    <h2>Sono</h2>
-                    <div class="metrics-panel" id="sleepContent">
-                        <p class="empty-state">Sem dados de sono</p>
-                    </div>
-                </div>
-
-                <div class="card withings-zip-card hidden" id="withingsZipCard">
-                    <h2>Withings — Histórico Diário</h2>
-                    <div class="withings-zip-blocks">
-                        <div class="withings-zip-block">
-                            <h3>Composição Corporal</h3>
-                            <div class="metrics-panel" id="wzBodyContent">
-                                <p class="empty-state">Sem dados</p>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="wzWeightChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="withings-zip-block">
-                            <h3>Saúde Cardiovascular</h3>
-                            <div class="metrics-panel" id="wzCardioContent">
-                                <p class="empty-state">Sem dados</p>
-                            </div>
-                        </div>
-                        <div class="withings-zip-block">
-                            <h3>Sono</h3>
-                            <div class="metrics-panel" id="wzSleepContent">
-                                <p class="empty-state">Sem dados</p>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="wzSleepChart"></canvas>
-                            </div>
-                        </div>
-                        <div class="withings-zip-block">
-                            <h3>Atividade</h3>
-                            <div class="metrics-panel" id="wzActivityContent">
-                                <p class="empty-state">Sem dados</p>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="wzStepsChart"></canvas>
                             </div>
                         </div>
                     </div>
